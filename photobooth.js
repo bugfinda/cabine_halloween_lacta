@@ -20,9 +20,19 @@ let overlays = Object.values(overlayPaths).map((path) => {
 
 let overlay = overlays[overlayIndex];
 
+// Animation variables for overlay zoom effect
+let isAnimatingOverlay = false;
+let animationStartTime = 0;
+let animationDuration = 800; // milliseconds
+let overlayScale = 1;
+let targetOverlay = null;
+
 function pickTemplate(n) {
 	overlayIndex = n;
-	overlay = overlays[n];
+	targetOverlay = overlays[n];
+
+	// Start overlay animation
+	startOverlayAnimation();
 
 	setTimeout(() => {
 		document.getElementById("overlays").style.display = "flex";
@@ -276,6 +286,60 @@ function addExtraTime() {
 	}
 }
 
+function startOverlayAnimation() {
+	isAnimatingOverlay = true;
+	animationStartTime = performance.now();
+	overlayScale = 0;
+}
+
+function drawAnimatedOverlay(ctx) {
+	if (isAnimatingOverlay && targetOverlay) {
+		const currentTime = performance.now();
+		const elapsed = currentTime - animationStartTime;
+		const progress = Math.min(elapsed / animationDuration, 1);
+
+		// Easing function for smooth zoom-in (ease-out-back)
+		const easeOutBack = (t) => {
+			const c1 = 1.70158;
+			const c3 = c1 + 1;
+			return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+		};
+
+		overlayScale = easeOutBack(progress);
+
+		if (progress >= 1) {
+			isAnimatingOverlay = false;
+			overlayScale = 1;
+			overlay = targetOverlay; // Set the final overlay
+			targetOverlay = null;
+		}
+	}
+
+	// Draw the overlay with current scale
+	const currentOverlayToDraw = isAnimatingOverlay ? targetOverlay : overlay;
+
+	if (currentOverlayToDraw && overlayScale > 0) {
+		ctx.save();
+
+		// Calculate scaled dimensions
+		const scaledWidth = WIDTH * overlayScale;
+		const scaledHeight = HEIGHT * overlayScale;
+
+		// Calculate position to center the scaled overlay
+		const offsetX = (WIDTH - scaledWidth) / 2;
+		const offsetY = (HEIGHT - scaledHeight) / 2;
+
+		// Set transparency during animation for smooth effect
+		const alpha = Math.min(overlayScale, 1);
+		ctx.globalAlpha = alpha;
+
+		// Draw the scaled overlay
+		ctx.drawImage(currentOverlayToDraw, offsetX, offsetY, scaledWidth, scaledHeight);
+
+		ctx.restore();
+	}
+}
+
 let videoXOffset = 440;
 
 let machine = "";
@@ -364,8 +428,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		// Restore the context to its original state
 		canvasCtx.restore();
 
-		// Draw the overlay without rotating
-		canvasCtx.drawImage(overlay, 0, 0, canvasElement.width, canvasElement.height);
+		// Draw the animated overlay
+		drawAnimatedOverlay(canvasCtx);
 
 		// Draw the userName label
 		canvasCtx.restore();

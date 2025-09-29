@@ -4,7 +4,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0 user-scalable=no" />
-	<title>Amstel Libertadores</title>
+	<title>Halloween Lacta</title>
 	<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 	<script src="./api.js"></script>
 	<script src="./photobooth.js"></script>
@@ -33,11 +33,12 @@
 			<!-- <img src="./templates/camera.svg" alt="camera" /> -->
 		</button>
 		<!-- click txt -->
-		<div class="click-text-container">
+		<div class="click-text-container" style="opacity: 0;">
 			<img src="./imgs/click_text.png">
 		</div>
 		<!-- back to cta btn -->
-		<button id="changeOverlaysBtn" class="button-capture" style="bottom: 210px" onclick="goBackToCallToAction()">
+		<button id="changeOverlaysBtn" class="button-capture" style="bottom: 210px; opacity: 0;"
+			onclick="goBackToCallToAction()">
 			<img id="underlayBtnImg" src="./templates/options.jpg" alt="underlay" />
 		</button>
 	</div>
