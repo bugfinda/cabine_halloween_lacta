@@ -3,28 +3,11 @@ const HEIGHT = 1080;
 
 const maxIdleTimer = 90; // seconds
 
-const underlayPaths = {
-	0: "./templates/underlay1.jpg",
-	1: "./templates/underlay2.jpg",
-	2: "./templates/underlay3.jpg",
-	3: "./templates/underlay4.jpg",
-};
-let underlayIndex = 0;
-
-// Preload the underlays
-let underlays = Object.values(underlayPaths).map((path) => {
-	let img = new Image();
-	img.src = path;
-	return img;
-});
-
-let underlay = underlays[underlayIndex];
-
 const overlayPaths = {
 	0: "./templates/m-1.png",
 	1: "./templates/m-2.png",
 	2: "./templates/m-3.png",
-	3: "./templates/m-4.png",
+	3: "./templates/m-1.png",
 };
 let overlayIndex = 0;
 
@@ -38,12 +21,9 @@ let overlays = Object.values(overlayPaths).map((path) => {
 let overlay = overlays[overlayIndex];
 
 function pickTemplate(n) {
-	underlayIndex = n;
-	underlay = underlays[n];
 	overlayIndex = n;
 	overlay = overlays[n];
 
-	// document.getElementById("underlayBtnImg").src = overlay.src;
 	setTimeout(() => {
 		document.getElementById("overlays").style.display = "flex";
 		document.getElementById("callToAction").style.display = "none";
@@ -170,7 +150,7 @@ function uploadPhoto(photo) {
 			showSpinner();
 			api
 				.post(
-					`event/f53c9450-6ace-11ef-820a-f73b0080b744/activity/8577cc10-6acf-11ef-820a-f73b0080b744/materialUpload`,
+					`event/d549ce10-9d4a-11f0-91ce-c982733c9978/activity/e8777910-9d4a-11f0-91ce-c982733c9978/materialUpload`,
 					formData,
 					{
 						headers: {
@@ -180,7 +160,7 @@ function uploadPhoto(photo) {
 					}
 				)
 				.then((response) => {
-					let qrCodeValue = `https://${"amstel-libertadores.blitzar.com.br"}/#/hosted/?material=${response.data.url}`;
+					let qrCodeValue = `https://${"halloween-lacta.blitzar.com.br"}/#/hosted/?material=${response.data.url}`;
 					new QRCode(document.getElementById("qrcode"), {
 						text: qrCodeValue,
 						width: 300,
@@ -193,7 +173,11 @@ function uploadPhoto(photo) {
 					hideSpinner();
 					document.getElementById("output_canvas").style.display = "none";
 					document.getElementById("qrcode").style.display = "flex";
+					document.getElementById("qrTimerControls").style.display = "flex";
 					document.getElementById("endBackPanel").style.display = "flex";
+
+					// Start QR code timer
+					startQrTimer();
 				})
 				.catch((err) => {
 					document.getElementById("resultContainer").style.display = "none";
@@ -223,11 +207,73 @@ function uploadPhoto(photo) {
 }
 
 function goBackToStart() {
+	stopQrTimer();
 	let url = "./photobooth.html";
 	if (machine) {
 		url += "?machineId=" + machine;
 	}
 	location.href = url;
+}
+
+function startQrTimer() {
+	if (isQrTimerActive) return;
+
+	isQrTimerActive = true;
+	qrTimeRemaining = qrTotalTime;
+	updateProgressBar();
+
+	qrTimer = setInterval(() => {
+		qrTimeRemaining -= 0.1;
+
+		if (qrTimeRemaining <= 0) {
+			stopQrTimer();
+			goBackToStart();
+		} else {
+			updateProgressBar();
+		}
+	}, 100); // Update every 100ms for smooth animation
+}
+
+function stopQrTimer() {
+	if (qrTimer) {
+		clearInterval(qrTimer);
+		qrTimer = null;
+	}
+	isQrTimerActive = false;
+}
+
+function updateProgressBar() {
+	const progressPercent = (qrTimeRemaining / qrTotalTime) * 100;
+	const progressBar = document.getElementById("qrProgressBar");
+	if (progressBar) {
+		progressBar.style.width = Math.max(0, progressPercent) + "%";
+
+		// Change color as time runs out
+		if (progressPercent > 50) {
+			progressBar.style.background = "linear-gradient(90deg, #4CAF50, #8BC34A)";
+		} else if (progressPercent > 25) {
+			progressBar.style.background = "linear-gradient(90deg, #FF9800, #FFC107)";
+		} else {
+			progressBar.style.background = "linear-gradient(90deg, #F44336, #FF5722)";
+		}
+	}
+}
+
+function addExtraTime() {
+	qrTimeRemaining += 10; // Add 10 seconds
+	qrTotalTime += 10; // Also increase total time for progress calculation
+	updateProgressBar();
+
+	// Visual feedback - briefly highlight the button
+	const btn = document.getElementById("addTimeBtn");
+	if (btn) {
+		btn.style.background = "#4CAF50";
+		btn.style.color = "white";
+		setTimeout(() => {
+			btn.style.background = "rgba(255, 255, 255, 0.9)";
+			btn.style.color = "#da291c";
+		}, 300);
+	}
 }
 
 let videoXOffset = 440;
@@ -366,3 +412,9 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 let timeoutInterval = null;
+
+// QR Code Timer variables
+let qrTimer = null;
+let qrTimeRemaining = 30; // seconds
+let qrTotalTime = 30;
+let isQrTimerActive = false;
