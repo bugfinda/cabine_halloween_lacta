@@ -1,1 +1,1 @@
-# cabine_halloween_lacta
+# Halloween Lacta - Photobooth

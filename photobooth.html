@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0 user-scalable=no" />
+	<title>Amstel Libertadores</title>
+	<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+	<script src="./api.js"></script>
+	<script src="./photobooth.js"></script>
+	<script src="./spinner.js"></script>
+	<script src="./lib/qrcode.min.js"></script>
+
+<body>
+	<div id="callToAction" class="cta">
+		<!-- <img src="./templates/cabine_amstel_cta.jpg"> -->
+		<!-- <p class="cta-top-phrase">Que tal uma foto<br> levando você para<br> dentro do BBB?</p> -->
+		<div class="cta-btns">
+			<button class="cta-btn0" onclick="pickTemplate(0)"></button>
+			<button class="cta-btn1" onclick="pickTemplate(1)"></button>
+			<button class="cta-btn2" onclick="pickTemplate(2)"></button>
+			<button class="cta-btn3" onclick="pickTemplate(3)"></button>
+		</div>
+		<!-- <p class="cta-bottom-phrase">Primeiro, você<br> escolhe a moldura.<br>Depois, click!</p> -->
+	</div>
+	<div class="container">
+		<video id="input_video" class="input_video" style="display: none; ">
+		</video>
+		<canvas id="output_canvas" class="output_canvas" width="1920" height="1080"></canvas>
+	</div>
+	<div id="overlays" class="overlays">
+		<button id="snapshotBtn" class="button-capture" onclick="takeSnapshot()">
+			<!-- <img src="./templates/camera.svg" alt="camera" /> -->
+		</button>
+		<!-- click txt -->
+		<div class="click-text-container">
+			<img src="./imgs/click_text.png">
+		</div>
+		<!-- back to cta btn -->
+		<button id="changeOverlaysBtn" class="button-capture" style="bottom: 210px" onclick="goBackToCallToAction()">
+			<img id="underlayBtnImg" src="./templates/options.jpg" alt="underlay" />
+		</button>
+	</div>
+	<!-- timer -->
+	<div id="snapshotTimer" class="timer-container"></div>
+	<!-- result img -->
+	<div id="resultContainer" class="result-image-container" style="display: none;">
+		<!-- b-confirmar, b-repetir btns -->
+		<div class="result-btns">
+			<button id="confirmBtn" class="result-btn" onclick="cancelSnapshot()">
+				<img src="./imgs/b-repetir.png" alt="underlay" />
+			</button>
+			<button id="repeatBtn" class="result-btn" onclick="confirmSnapshot()">
+				<img src="./imgs/b-confirmar.png" alt="underlay" />
+			</button>
+		</div>
+	</div>
+	<!-- end panel -->
+	<div id="endBackPanel" class="end-back-panel" onclick="goBackToStart()">
+
+	</div>
+	<!-- qrcode -->
+	<div id="qrcode" onclick="goBackToStart()"></div>
+
+	<!-- notification panel -->
+	<div id="notificationPanel" class="notification-panel-container"
+		onclick="document.getElementById('notificationPanel').style.display = 'none'">
+		<div class="notification-container">
+			<p id="notification"></p>
+		</div>
+	</div>
+
+	<img src="./templates/qrCodeScreen.jpg" style="display: none;">
+
+	<!-- videoXOffset slider -->
+	<input id="videoXOffset" type="range" min="0" max="1000" value="0" class="slider"
+		style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 100; display: none;">
+</body>
+
+<style>
+	@font-face {
+		font-family: "Ringside";
+		src: url("fonts/ringsideExtraWide-Bold.otf") format("opentype");
+	}
+
+	@font-face {
+		font-family: "btnFont";
+		src: url("fonts/BeaufortforLOL-Medium.ttf") format('truetype')
+	}
+
+	html,
+	body {
+		margin: 0;
+		width: 100%;
+		background: #da291c;
+		color: #fff;
+		font-size: 1.2em;
+		font-family: "Ringside";
+		letter-spacing: .5rem;
+		text-transform: uppercase;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
+		overflow: hidden;
+		user-select: none;
+	}
+
+	.cta {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100vh;
+		text-align: center;
+		color: white;
+		background: #da291c;
+		background-image: url("imgs/t-0.png");
+		background-repeat: no-repeat;
+		background-size: cover;
+		background-attachment: fixed;
+		background-position: top center;
+		z-index: 1;
+	}
+
+	.cta img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		opacity: 0.5;
+	}
+
+	.cta-top-phrase {
+		position: absolute;
+		top: 21%;
+		left: 50%;
+		transform: translate(-50%, 0);
+		width: 100%;
+		font-size: 1.5em;
+		animation: fadeIn 1s;
+	}
+
+	.cta-bottom-phrase {
+		position: absolute;
+		bottom: 13%;
+		left: 50%;
+		transform: translate(-50%, 0);
+		width: 100%;
+		font-size: 1.5em;
+		animation: fadeIn 1s;
+	}
+
+	.cta-btn0,
+	.cta-btn1,
+	.cta-btn2,
+	.cta-btn3 {
+		position: absolute;
+		top: 42%;
+		left: 20%;
+		width: 400px;
+		height: 240px;
+		background: transparent;
+		border: none;
+		font-size: 20px;
+		cursor: pointer;
+		outline: none;
+		transform: rotate(90deg);
+		user-select: none;
+	}
+
+	.cta-btn0:active,
+	.cta-btn1:active,
+	.cta-btn2:active,
+	.cta-btn3:active {
+		/* transform: scale(0.95) rotate(90deg);
+		transition: 0.1s; */
+		user-select: none;
+		background: transparent;
+	}
+
+	.cta-btn1 {
+		left: 44%;
+
+	}
+
+	.cta-btn2 {
+		top: 64%;
+		/* background-image: url("./templates/moldura2.png");
+		background-size: cover;
+		background-repeat: no-repeat; */
+	}
+
+	.cta-btn3 {
+		top: 64%;
+		left: 44%;
+		/* background-image: url("./templates/moldura3.png");
+		background-size: cover;
+		background-repeat: no-repeat; */
+	}
+
+	.container {
+		position: relative;
+		width: 100%;
+		height: 100vh;
+		background: black;
+
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.output_canvas {
+		position: relative;
+		transform: rotate(90deg);
+		height: 100vw;
+	}
+
+	.overlays {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100vh;
+		z-index: 2;
+
+		display: none;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.click-text-container {
+		position: fixed;
+		top: 40px;
+		left: 42px;
+
+		justify-content: center;
+		align-items: center;
+
+	}
+
+	.result-image-container {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100vh;
+		z-index: 100;
+		background: #000;
+		overflow: hidden;
+
+		display: none;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.result-image {
+		position: relative;
+		object-fit: cover;
+		transform: rotate(90deg);
+		transform-origin: center;
+		width: 100vh;
+		height: 100vw;
+		z-index: 1;
+	}
+
+	.result-btns {
+		position: absolute;
+		top: 35.5vh;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 2;
+
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		overflow: hidden;
+	}
+
+	.result-btn {
+		position: relative;
+		padding: 10px;
+		background: transparent;
+		outline: none;
+		border: none;
+	}
+
+	.button-capture {
+		position: absolute;
+		left: 50%;
+		bottom: 10px;
+		transform: translate(-50%, 0);
+		z-index: 0;
+		/* width: 60px; */
+		/* height: 60px; */
+		border: none;
+		border-radius: 10px;
+		padding: 16px;
+		background: transparent;
+		backdrop-filter: blur(10px) brightness(1.1);
+		/* background: #eee; */
+		cursor: pointer;
+		outline: none;
+		pointer-events: all;
+
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		overflow: hidden;
+	}
+
+	#snapshotBtn {
+		width: 60px;
+		height: 60px;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		transform: translate(0, 0);
+		background: transparent;
+		backdrop-filter: none;
+	}
+
+	#underlayBtnImg {
+		width: 100px;
+		height: 100px;
+		object-fit: contain;
+		transform: rotate(90deg);
+	}
+
+	.timer-container {
+		display: none;
+		position: fixed;
+		top: 100px;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 100;
+		color: #fffa;
+		font-size: 240px;
+		font-weight: bold;
+		pointer-events: none;
+		font-family: 'Roboto', 'Arial', sans-serif;
+
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+
+	.end-back-panel {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100vh;
+		z-index: 1000;
+		background: #da291c;
+		background-image: url("templates/qrCodeScreen.jpg");
+		background-repeat: no-repeat;
+		background-size: cover;
+		background-attachment: fixed;
+		background-position: top center;
+		overflow: hidden;
+
+		display: none;
+		animation: fadeIn 1s;
+	}
+
+	#qrcode {
+		position: absolute;
+		top: 55%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 400px;
+		height: 400px;
+		background: white;
+		border-radius: 10px;
+		overflow: hidden;
+		z-index: 1001;
+
+		display: none;
+		justify-content: center;
+		align-items: center;
+	}
+
+
+	.notification-panel-container {
+		position: fixed;
+		bottom: 0;
+		right: 0;
+		width: 100vw;
+		height: 100vh;
+		z-index: 10;
+		background-color: #2227;
+		color: #fff;
+		padding: 10px;
+		font-size: 12px;
+		font-family: Arial, sans-serif;
+
+		display: none;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.notification-container {
+		position: relative;
+		width: 70%;
+		background: #da291c;
+		border-radius: 10px;
+		padding: 20px;
+
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.notification-container p {
+		color: #fff;
+		font-size: 2em;
+		font-family: "Ringside";
+		letter-spacing: .3rem;
+		text-transform: uppercase;
+		user-select: none;
+		text-align: center;
+	}
+
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+		}
+
+		to {
+			opacity: 1;
+		}
+	}
+</style>
+
+</html>
