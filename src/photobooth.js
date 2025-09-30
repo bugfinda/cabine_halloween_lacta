@@ -44,22 +44,22 @@ let currentTemplate = templateOverlays[templateIndex];
 // Animation system for template-specific effects
 const animationConfigs = {
 	0: {
-		// Template m-1: Zoom + Rotate
-		type: "zoomRotate",
-		duration: 800,
+		// Template m-1: Slide Up
+		type: "slideUp",
+		duration: 300,
 		elements: ["template"], // Elements to animate
 	},
 	1: {
 		// Template m-2: Multi-element slide from corners
 		type: "multiSlideIn",
-		duration: 800,
+		duration: 500,
 		elements: ["topLeft", "topRight", "bottomLeft", "bottomRight"],
-		staggerDelay: 100, // Delay between each element starting
+		staggerDelay: 30, // Delay between each element starting
 	},
 	2: {
 		// Template m-3: Bounce scale
 		type: "bounceScale",
-		duration: 1000,
+		duration: 500,
 		elements: ["template"],
 	},
 };
@@ -411,10 +411,10 @@ const easingFunctions = {
 
 // Animation type implementations
 const animationTypes = {
-	zoomRotate: (progress) => {
-		const scale = easingFunctions.easeOutBack(progress);
-		const rotation = progress * Math.PI * 0.25; // 45 degrees
-		return { scale, rotation, translateX: 0, translateY: 0, alpha: Math.min(progress * 2, 1) };
+	slideUp: (progress) => {
+		const eased = easingFunctions.easeOutBack(progress);
+		const translateX = (1 - eased) * HEIGHT * 0.5; // Slide up from bottom
+		return { scale: 1, rotation: 0, translateX, translateY: 0, alpha: Math.min(progress * 2, 1) };
 	},
 	multiSlideIn: (progress, elementKey, staggerDelay, duration) => {
 		// Calculate staggered progress for each element
@@ -427,7 +427,7 @@ const animationTypes = {
 			return { translateX: 0, translateY: 0, alpha: 0 };
 		}
 
-		const eased = easingFunctions.easeOutBack(adjustedProgress);
+		const eased = easingFunctions.easeInOutQuad(adjustedProgress);
 
 		// Calculate slide distances from respective corners
 		let startX = 0,
