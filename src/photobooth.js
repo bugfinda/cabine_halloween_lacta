@@ -3,55 +3,116 @@ const HEIGHT = 1080;
 
 const maxIdleTimer = 90; // seconds
 
-const overlayPaths = {
-	0: "./templates/m-1.png",
-	1: "./templates/m-2.png",
-	2: "./templates/m-3.png",
-	3: "./templates/frame.png",
-};
-let overlayIndex = 0;
+// Frame is common to all templates
+const framePath = "./templates/frame.png";
+let frameImage = new Image();
+frameImage.src = framePath;
 
-// Preload the overlays
-let overlays = Object.values(overlayPaths).map((path) => {
+// Template-specific overlays (without frame)
+const templatePaths = {
+	0: "./templates/m-1.png",
+	1: "./templates/m-2.png", // Fallback for m-2
+	2: "./templates/m-3.png",
+};
+
+// m-2 multi-element paths
+const m2ElementPaths = {
+	topLeft: "./templates/m-2-top-left.png",
+	topRight: "./templates/m-2-top-right.png",
+	bottomLeft: "./templates/m-2-bottom-left.png",
+	bottomRight: "./templates/m-2-bottom-right.png",
+};
+
+let templateIndex = 0;
+
+// Preload the template overlays
+let templateOverlays = Object.values(templatePaths).map((path) => {
 	let img = new Image();
 	img.src = path;
 	return img;
 });
 
-let overlay = overlays[overlayIndex];
+// Preload m-2 elements
+let m2Elements = {};
+Object.keys(m2ElementPaths).forEach((key) => {
+	m2Elements[key] = new Image();
+	m2Elements[key].src = m2ElementPaths[key];
+});
 
-// Animation variables for overlay zoom effect
-let isAnimatingOverlay = false;
+let currentTemplate = templateOverlays[templateIndex];
+
+// Animation system for template-specific effects
+const animationConfigs = {
+	0: {
+		// Template m-1: Zoom + Rotate
+		type: "zoomRotate",
+		duration: 800,
+		elements: ["template"], // Elements to animate
+	},
+	1: {
+		// Template m-2: Multi-element slide from corners
+		type: "multiSlideIn",
+		duration: 800,
+		elements: ["topLeft", "topRight", "bottomLeft", "bottomRight"],
+		staggerDelay: 100, // Delay between each element starting
+	},
+	2: {
+		// Template m-3: Bounce scale
+		type: "bounceScale",
+		duration: 1000,
+		elements: ["template"],
+	},
+};
+
+// Animation state
+let isAnimating = false;
 let animationStartTime = 0;
-let animationDuration = 800; // milliseconds
-let overlayScale = 1;
-let targetOverlay = null;
+let currentAnimationConfig = null;
+let targetTemplate = null;
+let animationState = {
+	scale: 1,
+	rotation: 0,
+	translateX: 0,
+	translateY: 0,
+	alpha: 1,
+};
+
+// Multi-element animation states (for m-2)
+let multiElementStates = {
+	topLeft: { translateX: 0, translateY: 0, alpha: 1 },
+	topRight: { translateX: 0, translateY: 0, alpha: 1 },
+	bottomLeft: { translateX: 0, translateY: 0, alpha: 1 },
+	bottomRight: { translateX: 0, translateY: 0, alpha: 1 },
+};
 
 function previousTemplate() {
-	overlayIndex = overlayIndex - 1;
-	if (overlayIndex < 0) {
-		overlayIndex = overlays.length - 1;
+	templateIndex = templateIndex - 1;
+	if (templateIndex < 0) {
+		templateIndex = templateOverlays.length - 1;
 	}
-	targetOverlay = overlays[overlayIndex];
+	targetTemplate = templateOverlays[templateIndex];
+	currentAnimationConfig = animationConfigs[templateIndex];
 
-	startOverlayAnimation();
+	startTemplateAnimation();
 }
 
 function nextTemplate() {
-	overlayIndex = overlayIndex + 1;
-	if (overlayIndex >= overlays.length) {
-		overlayIndex = 0;
+	templateIndex = templateIndex + 1;
+	if (templateIndex >= templateOverlays.length) {
+		templateIndex = 0;
 	}
-	targetOverlay = overlays[overlayIndex];
+	targetTemplate = templateOverlays[templateIndex];
+	currentAnimationConfig = animationConfigs[templateIndex];
 
-	startOverlayAnimation();
+	startTemplateAnimation();
 }
 
 function pickTemplate() {
-	overlayIndex = Math.floor(Math.random() * overlays.length);
-	targetOverlay = overlays[overlayIndex];
+	templateIndex = Math.floor(Math.random() * templateOverlays.length);
+	targetTemplate = templateOverlays[templateIndex];
+	currentAnimationConfig = animationConfigs[templateIndex];
 
-	startOverlayAnimation();
+	startTemplateAnimation();
 
 	setTimeout(() => {
 		document.getElementById("overlays").style.display = "flex";
@@ -301,57 +362,240 @@ function addExtraTime() {
 	}
 }
 
-function startOverlayAnimation() {
-	isAnimatingOverlay = true;
+function startTemplateAnimation() {
+	isAnimating = true;
 	animationStartTime = performance.now();
-	overlayScale = 0;
+	// Reset animation state
+	animationState = {
+		scale: 0,
+		rotation: 0,
+		translateX: 0,
+		translateY: 0,
+		alpha: 0,
+	};
+
+	// Reset multi-element states for m-2
+	if (currentAnimationConfig?.type === "multiSlideIn") {
+		Object.keys(multiElementStates).forEach((key) => {
+			multiElementStates[key] = { translateX: 0, translateY: 0, alpha: 0 };
+		});
+	}
 }
 
-function drawAnimatedOverlay(ctx) {
-	if (isAnimatingOverlay && targetOverlay) {
-		const currentTime = performance.now();
-		const elapsed = currentTime - animationStartTime;
-		const progress = Math.min(elapsed / animationDuration, 1);
+// Easing functions
+const easingFunctions = {
+	easeOutBack: (t) => {
+		const c1 = 1.70158;
+		const c3 = c1 + 1;
+		return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+	},
+	easeOutBounce: (t) => {
+		const n1 = 7.5625;
+		const d1 = 2.75;
+		if (t < 1 / d1) {
+			return n1 * t * t;
+		} else if (t < 2 / d1) {
+			return n1 * (t -= 1.5 / d1) * t + 0.75;
+		} else if (t < 2.5 / d1) {
+			return n1 * (t -= 2.25 / d1) * t + 0.9375;
+		} else {
+			return n1 * (t -= 2.625 / d1) * t + 0.984375;
+		}
+	},
+	easeInOutQuad: (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2),
+	easeOutElastic: (t) => {
+		const c4 = (2 * Math.PI) / 3;
+		return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+	},
+};
 
-		// Easing function for smooth zoom-in (ease-out-back)
-		const easeOutBack = (t) => {
-			const c1 = 1.70158;
-			const c3 = c1 + 1;
-			return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-		};
+// Animation type implementations
+const animationTypes = {
+	zoomRotate: (progress) => {
+		const scale = easingFunctions.easeOutBack(progress);
+		const rotation = progress * Math.PI * 0.25; // 45 degrees
+		return { scale, rotation, translateX: 0, translateY: 0, alpha: Math.min(progress * 2, 1) };
+	},
+	multiSlideIn: (progress, elementKey, staggerDelay, duration) => {
+		// Calculate staggered progress for each element
+		const elementOrder = { topLeft: 0, topRight: 1, bottomLeft: 2, bottomRight: 3 };
+		const elementIndex = elementOrder[elementKey] || 0;
+		const staggerOffset = (elementIndex * staggerDelay) / duration;
+		const adjustedProgress = Math.max(0, Math.min(1, (progress - staggerOffset) / (1 - staggerOffset * 3)));
 
-		overlayScale = easeOutBack(progress);
+		if (adjustedProgress <= 0) {
+			return { translateX: 0, translateY: 0, alpha: 0 };
+		}
 
-		if (progress >= 1) {
-			isAnimatingOverlay = false;
-			overlayScale = 1;
-			overlay = targetOverlay; // Set the final overlay
-			targetOverlay = null;
+		const eased = easingFunctions.easeOutBack(adjustedProgress);
+
+		// Calculate slide distances from respective corners
+		let startX = 0,
+			startY = 0;
+		switch (elementKey) {
+			case "topLeft":
+				startX = -WIDTH * 0.6; // Slide from left
+				startY = -HEIGHT * 0.6; // Slide from top
+				break;
+			case "topRight":
+				startX = WIDTH * 0.6; // Slide from right
+				startY = -HEIGHT * 0.6; // Slide from top
+				break;
+			case "bottomLeft":
+				startX = -WIDTH * 0.6; // Slide from left
+				startY = HEIGHT * 0.6; // Slide from bottom
+				break;
+			case "bottomRight":
+				startX = WIDTH * 0.6; // Slide from right
+				startY = HEIGHT * 0.6; // Slide from bottom
+				break;
+		}
+
+		const translateX = startX * (1 - eased);
+		const translateY = startY * (1 - eased);
+		const alpha = Math.min(adjustedProgress * 2, 1);
+
+		return { translateX, translateY, alpha };
+	},
+	bounceScale: (progress) => {
+		const scale = easingFunctions.easeOutBounce(progress);
+		return { scale, rotation: 0, translateX: 0, translateY: 0, alpha: Math.min(progress * 1.5, 1) };
+	},
+	fadeFloat: (progress) => {
+		const scale = easingFunctions.easeInOutQuad(progress);
+		const translateY = (1 - progress) * -50; // Float up effect
+		const alpha = easingFunctions.easeOutElastic(progress);
+		return { scale, rotation: 0, translateX: 0, translateY, alpha };
+	},
+};
+
+function updateAnimation() {
+	if (!isAnimating || !currentAnimationConfig) return;
+
+	const currentTime = performance.now();
+	const elapsed = currentTime - animationStartTime;
+	const progress = Math.min(elapsed / currentAnimationConfig.duration, 1);
+
+	// Handle multi-element animations (m-2)
+	if (currentAnimationConfig.type === "multiSlideIn") {
+		currentAnimationConfig.elements.forEach((elementKey) => {
+			const elementState = animationTypes.multiSlideIn(
+				progress,
+				elementKey,
+				currentAnimationConfig.staggerDelay,
+				currentAnimationConfig.duration
+			);
+			multiElementStates[elementKey] = elementState;
+		});
+	} else {
+		// Handle single-element animations
+		const animationType = animationTypes[currentAnimationConfig.type];
+		if (animationType) {
+			animationState = animationType(progress);
 		}
 	}
 
-	// Draw the overlay with current scale
-	const currentOverlayToDraw = isAnimatingOverlay ? targetOverlay : overlay;
+	// Complete animation
+	if (progress >= 1) {
+		isAnimating = false;
+		if (currentAnimationConfig.type === "multiSlideIn") {
+			// Reset multi-element states to final positions
+			currentAnimationConfig.elements.forEach((elementKey) => {
+				multiElementStates[elementKey] = { translateX: 0, translateY: 0, alpha: 1 };
+			});
+		} else {
+			animationState = { scale: 1, rotation: 0, translateX: 0, translateY: 0, alpha: 1 };
+		}
+		currentTemplate = targetTemplate;
+		targetTemplate = null;
+	}
+}
 
-	if (currentOverlayToDraw && overlayScale > 0) {
-		ctx.save();
+function drawTemplateElements(ctx) {
+	// Update animation state
+	updateAnimation();
 
-		// Calculate scaled dimensions
-		const scaledWidth = WIDTH * overlayScale;
-		const scaledHeight = HEIGHT * overlayScale;
+	// Handle m-2 multi-element animation
+	if (templateIndex === 1 && (isAnimating || currentAnimationConfig?.type === "multiSlideIn")) {
+		// Draw each m-2 element separately at natural size, anchored to corners
+		Object.keys(m2Elements).forEach((elementKey) => {
+			const element = m2Elements[elementKey];
+			const state = multiElementStates[elementKey];
 
-		// Calculate position to center the scaled overlay
-		const offsetX = (WIDTH - scaledWidth) / 2;
-		const offsetY = (HEIGHT - scaledHeight) / 2;
+			if (element && element.complete && state.alpha > 0) {
+				ctx.save();
 
-		// Set transparency during animation for smooth effect
-		const alpha = Math.min(overlayScale, 1);
-		ctx.globalAlpha = alpha;
+				ctx.globalAlpha = state.alpha;
 
-		// Draw the scaled overlay
-		ctx.drawImage(currentOverlayToDraw, offsetX, offsetY, scaledWidth, scaledHeight);
+				// Calculate anchor position based on element's corner
+				let anchorX = 0,
+					anchorY = 0;
+				switch (elementKey) {
+					case "topLeft":
+						anchorX = 0; // Left edge
+						anchorY = 0; // Top edge
+						break;
+					case "topRight":
+						anchorX = WIDTH - element.naturalWidth; // Right edge minus element width
+						anchorY = 0; // Top edge
+						break;
+					case "bottomLeft":
+						anchorX = 0; // Left edge
+						anchorY = HEIGHT - element.naturalHeight; // Bottom edge minus element height
+						break;
+					case "bottomRight":
+						anchorX = WIDTH - element.naturalWidth; // Right edge minus element width
+						anchorY = HEIGHT - element.naturalHeight; // Bottom edge minus element height
+						break;
+				}
 
-		ctx.restore();
+				// Apply animation translation on top of anchor position
+				const finalX = anchorX + state.translateX;
+				const finalY = anchorY + state.translateY;
+
+				// Draw element at natural size
+				ctx.drawImage(element, finalX, finalY, element.naturalWidth, element.naturalHeight);
+
+				ctx.restore();
+			}
+		});
+	} else {
+		// Handle single-element templates (m-1, m-3) or non-animating m-2
+		const templateToDraw = isAnimating ? targetTemplate : currentTemplate;
+
+		if (templateToDraw && templateToDraw.complete && animationState.alpha > 0) {
+			ctx.save();
+
+			// Apply transformations
+			const centerX = WIDTH / 2;
+			const centerY = HEIGHT / 2;
+
+			// Move to center for transformation
+			ctx.translate(centerX + animationState.translateX, centerY + animationState.translateY);
+
+			// Apply rotation
+			if (animationState.rotation !== 0) {
+				ctx.rotate(animationState.rotation);
+			}
+
+			// Apply scale
+			if (animationState.scale !== 1) {
+				ctx.scale(animationState.scale, animationState.scale);
+			}
+
+			// Set alpha
+			ctx.globalAlpha = animationState.alpha;
+
+			// Draw template centered
+			ctx.drawImage(templateToDraw, -WIDTH / 2, -HEIGHT / 2, WIDTH, HEIGHT);
+
+			ctx.restore();
+		}
+	}
+
+	// Draw the frame on top of everything (no animation on frame)
+	if (frameImage && frameImage.complete) {
+		ctx.drawImage(frameImage, 0, 0, WIDTH, HEIGHT);
 	}
 }
 
@@ -436,8 +680,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		// Restore the context to its original state
 		canvasCtx.restore();
 
-		// Draw the animated overlay
-		drawAnimatedOverlay(canvasCtx);
+		// Draw the frame and animated template elements
+		drawTemplateElements(canvasCtx);
 
 		// Draw the userName label
 		canvasCtx.restore();
