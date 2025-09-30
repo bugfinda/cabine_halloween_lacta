@@ -1,0 +1,29 @@
+{
+	"$schema": "https://schema.tauri.app/config/2.0.0-rc",
+	"productName": "cabine-halloween-lacta",
+	"version": "0.1.0",
+	"identifier": "br.com.blitzar.cabine-halloween-lacta",
+	"build": {
+		"frontendDist": "../src"
+	},
+	"app": {
+		"withGlobalTauri": true,
+		"windows": [
+			{
+				"title": "Halloween Lacta",
+				"width": 800,
+				"height": 600,
+				"resizable": true,
+				"fullscreen": true
+			}
+		],
+		"security": {
+			"csp": null
+		}
+	},
+	"bundle": {
+		"active": true,
+		"targets": "all",
+		"icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
+	}
+}
