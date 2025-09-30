@@ -532,20 +532,20 @@ function drawTemplateElements(ctx) {
 					anchorY = 0;
 				switch (elementKey) {
 					case "topLeft":
-						anchorX = 0; // Left edge
-						anchorY = 0; // Top edge
+						anchorX = 250;
+						anchorY = 0;
 						break;
 					case "topRight":
-						anchorX = WIDTH - element.naturalWidth; // Right edge minus element width
-						anchorY = 0; // Top edge
+						anchorX = WIDTH - element.naturalWidth;
+						anchorY = 0;
 						break;
 					case "bottomLeft":
-						anchorX = 0; // Left edge
-						anchorY = HEIGHT - element.naturalHeight; // Bottom edge minus element height
+						anchorX = 50;
+						anchorY = HEIGHT - element.naturalHeight;
 						break;
 					case "bottomRight":
-						anchorX = WIDTH - element.naturalWidth; // Right edge minus element width
-						anchorY = HEIGHT - element.naturalHeight; // Bottom edge minus element height
+						anchorX = WIDTH - element.naturalWidth;
+						anchorY = HEIGHT - element.naturalHeight;
 						break;
 				}
 
