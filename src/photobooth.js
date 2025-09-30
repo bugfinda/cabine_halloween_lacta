@@ -7,7 +7,7 @@ const overlayPaths = {
 	0: "./templates/m-1.png",
 	1: "./templates/m-2.png",
 	2: "./templates/m-3.png",
-	3: "./templates/m-1.png",
+	3: "./templates/frame.png",
 };
 let overlayIndex = 0;
 
@@ -27,11 +27,30 @@ let animationDuration = 800; // milliseconds
 let overlayScale = 1;
 let targetOverlay = null;
 
-function pickTemplate(n) {
-	overlayIndex = n;
-	targetOverlay = overlays[n];
+function previousTemplate() {
+	overlayIndex = overlayIndex - 1;
+	if (overlayIndex < 0) {
+		overlayIndex = overlays.length - 1;
+	}
+	targetOverlay = overlays[overlayIndex];
 
-	// Start overlay animation
+	startOverlayAnimation();
+}
+
+function nextTemplate() {
+	overlayIndex = overlayIndex + 1;
+	if (overlayIndex >= overlays.length) {
+		overlayIndex = 0;
+	}
+	targetOverlay = overlays[overlayIndex];
+
+	startOverlayAnimation();
+}
+
+function pickTemplate() {
+	overlayIndex = Math.floor(Math.random() * overlays.length);
+	targetOverlay = overlays[overlayIndex];
+
 	startOverlayAnimation();
 
 	setTimeout(() => {
@@ -46,7 +65,6 @@ function goBackToCallToAction() {
 }
 
 let isSnapshoting = false;
-let shouldUnmirror = false;
 
 function takeSnapshot() {
 	if (isSnapshoting) return;
@@ -69,8 +87,6 @@ function takeSnapshot() {
 		if (count <= 0) {
 			snapshotTimerContainer.style.display = "none";
 
-			shouldUnmirror = true;
-
 			setTimeout(() => {
 				clearInterval(counter);
 
@@ -83,7 +99,6 @@ function takeSnapshot() {
 					document.getElementById("resultContainer").appendChild(img);
 					outputImage = img;
 					isSnapshoting = false;
-					shouldUnmirror = false;
 				};
 				return;
 			}, 200);
@@ -415,14 +430,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		canvasCtx.scale(-1, 1);
 		canvasCtx.translate(-canvasElement.width, 0);
 
-		// flip horizontally (selfie cam)
-		if (shouldUnmirror) {
-			canvasCtx.scale(1, -1);
-			canvasCtx.translate(0, -canvasElement.height);
-		}
-
 		// (landscape cam)
-		// canvasCtx.drawImage(videoElement, 0, videoXOffset, canvasElement.width, canvasElement.height);
 		canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
 
 		// Restore the context to its original state

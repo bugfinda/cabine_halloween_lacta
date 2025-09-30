@@ -17,15 +17,9 @@
 			<source src="videos/intro.mp4" type="video/mp4">
 			Your browser does not support the video tag.
 		</video>
-		<!-- <img src="./templates/cabine_amstel_cta.jpg"> -->
-		<!-- <p class="cta-top-phrase">Que tal uma foto<br> levando você para<br> dentro do BBB?</p> -->
 		<div class="cta-btns">
-			<button class="cta-btn0" onclick="pickTemplate(0)"></button>
-			<button class="cta-btn1" onclick="pickTemplate(1)"></button>
-			<button class="cta-btn2" onclick="pickTemplate(2)"></button>
-			<button class="cta-btn3" onclick="pickTemplate(3)"></button>
+			<button class="cta-btn0" onclick="pickTemplate()"></button>
 		</div>
-		<!-- <p class="cta-bottom-phrase">Primeiro, você<br> escolhe a moldura.<br>Depois, click!</p> -->
 	</div>
 	<div class="container">
 		<video id="input_video" class="input_video" style="display: none; ">
@@ -33,15 +27,26 @@
 		<canvas id="output_canvas" class="output_canvas" width="1920" height="1080"></canvas>
 	</div>
 	<div id="overlays" class="overlays">
+		<!-- snapshot btn -->
 		<button id="snapshotBtn" class="button-capture" onclick="takeSnapshot()">
-			<!-- <img src="./templates/camera.svg" alt="camera" /> -->
 		</button>
+
+		<!-- previous btn -->
+		<button id="previousBtn" class="prev-next-btn" onclick="previousTemplate()">
+			<img src="./imgs/previous.png" alt="previous" />
+		</button>
+
+		<!-- next btn -->
+		<button id="nextBtn" class="prev-next-btn" style="left:unset;right:-20px" onclick="nextTemplate()">
+			<img src="./imgs/next.png" alt="previous" />
+		</button>
+
 		<!-- click txt -->
 		<div class="click-text-container" style="opacity: 0;">
 			<img src="./imgs/click_text.png">
 		</div>
 		<!-- back to cta btn -->
-		<button id="changeOverlaysBtn" class="button-capture" style="bottom: 210px; opacity: 0;"
+		<button id="changeOverlaysBtn" class="button-capture" style="bottom: 210px; visibility: hidden;"
 			onclick="goBackToCallToAction()">
 			<img id="underlayBtnImg" src="./templates/options.jpg" alt="underlay" />
 		</button>
@@ -146,72 +151,42 @@
 		opacity: 0.5;
 	}
 
-	.cta-top-phrase {
-		position: absolute;
-		top: 21%;
-		left: 50%;
-		transform: translate(-50%, 0);
+	.cta-btns {
 		width: 100%;
-		font-size: 1.5em;
-		animation: fadeIn 1s;
+		height: 100dvh;
 	}
 
-	.cta-bottom-phrase {
+	.cta-btn0 {
 		position: absolute;
-		bottom: 13%;
-		left: 50%;
-		transform: translate(-50%, 0);
+		top: 0;
+		left: 0;
 		width: 100%;
-		font-size: 1.5em;
-		animation: fadeIn 1s;
-	}
-
-	.cta-btn0,
-	.cta-btn1,
-	.cta-btn2,
-	.cta-btn3 {
-		position: absolute;
-		top: 42%;
-		left: 20%;
-		width: 400px;
-		height: 240px;
+		height: 100%;
 		background: transparent;
 		border: none;
 		font-size: 20px;
 		cursor: pointer;
 		outline: none;
-		transform: rotate(90deg);
 		user-select: none;
 	}
 
-	.cta-btn0:active,
-	.cta-btn1:active,
-	.cta-btn2:active,
-	.cta-btn3:active {
-		/* transform: scale(0.95) rotate(90deg);
-		transition: 0.1s; */
-		user-select: none;
+	.prev-next-btn {
+		position: fixed;
+		top: 37%;
+		left: -10px;
+		width: 18%;
+		height: 15%;
+		padding: 0;
 		background: transparent;
-	}
-
-	.cta-btn1 {
-		left: 44%;
+		outline: none;
+		border: none;
 
 	}
 
-	.cta-btn2 {
-		top: 64%;
-		/* background-image: url("./templates/moldura2.png");
-		background-size: cover;
-		background-repeat: no-repeat; */
-	}
-
-	.cta-btn3 {
-		top: 64%;
-		left: 44%;
-		/* background-image: url("./templates/moldura3.png");
-		background-size: cover;
-		background-repeat: no-repeat; */
+	.prev-next-btn img {
+		width: 50%;
+		height: 50%;
+		object-fit: contain;
 	}
 
 	.container {
