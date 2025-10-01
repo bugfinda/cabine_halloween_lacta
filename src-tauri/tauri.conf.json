@@ -1,7 +1,7 @@
 {
 	"$schema": "https://schema.tauri.app/config/2.0.0-rc",
 	"productName": "cabine-halloween-lacta",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"identifier": "br.com.blitzar.cabine-halloween-lacta",
 	"build": {
 		"frontendDist": "../src"
@@ -22,8 +22,18 @@
 		}
 	},
 	"bundle": {
+		"createUpdaterArtifacts": true,
 		"active": true,
 		"targets": "all",
 		"icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
+	},
+	"plugins": {
+		"updater": {
+			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQyMTg3NEI1Qjg2NDM1QUIKUldTck5XUzR0WFFZMGdqUkRZTXZVNEh6Yk9yWFlYRzBvRUowZFVZdEhaanFJSkUybHdHRTNxcjYK",
+			"endpoints": ["https://proto-assets.s3.amazonaws.com/cabine-halloween-lacta/update/update.json"],
+			"windows": {
+				"installMode": "basicUi"
+			}
+		}
 	}
 }
