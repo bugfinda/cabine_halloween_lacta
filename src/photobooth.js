@@ -23,6 +23,18 @@ const m2ElementPaths = {
 	bottomRight: "./templates/m-2-bottom-right.png",
 };
 
+// m-1 multi-element paths
+const m1ElementPaths = {
+	top: "./templates/m-1-top.png",
+	bottom: "./templates/m-1-bottom.png",
+};
+
+// m-3 multi-element paths
+const m3ElementPaths = {
+	top: "./templates/m-3-top.png",
+	bottom: "./templates/m-3-bottom.png",
+};
+
 let templateIndex = 0;
 
 // Preload the template overlays
@@ -39,28 +51,44 @@ Object.keys(m2ElementPaths).forEach((key) => {
 	m2Elements[key].src = m2ElementPaths[key];
 });
 
+// Preload m-1 elements
+let m1Elements = {};
+Object.keys(m1ElementPaths).forEach((key) => {
+	m1Elements[key] = new Image();
+	m1Elements[key].src = m1ElementPaths[key];
+});
+
+// Preload m-3 elements
+let m3Elements = {};
+Object.keys(m3ElementPaths).forEach((key) => {
+	m3Elements[key] = new Image();
+	m3Elements[key].src = m3ElementPaths[key];
+});
+
 let currentTemplate = templateOverlays[templateIndex];
 
 // Animation system for template-specific effects
 const animationConfigs = {
 	0: {
-		// Template m-1: Slide Up
-		type: "slideUp",
-		duration: 300,
-		elements: ["template"], // Elements to animate
+		// Template m-1: Multi-element slide up
+		type: "multiSlideUp",
+		duration: 500,
+		elements: ["top", "bottom"],
+		staggerDelay: 200, // Delay between each element starting
 	},
 	1: {
 		// Template m-2: Multi-element slide from corners
 		type: "multiSlideIn",
 		duration: 500,
 		elements: ["topLeft", "topRight", "bottomLeft", "bottomRight"],
-		staggerDelay: 30, // Delay between each element starting
+		staggerDelay: 50, // Delay between each element starting
 	},
 	2: {
-		// Template m-3: Bounce scale
-		type: "bounceScale",
-		duration: 500,
-		elements: ["template"],
+		// Template m-3: Multi-element slide up and down
+		type: "multiSlideUpAndDown",
+		duration: 600,
+		elements: ["top", "bottom"],
+		staggerDelay: 150, // Delay between each element starting
 	},
 };
 
@@ -83,6 +111,47 @@ let multiElementStates = {
 	topRight: { translateX: 0, translateY: 0, alpha: 1 },
 	bottomLeft: { translateX: 0, translateY: 0, alpha: 1 },
 	bottomRight: { translateX: 0, translateY: 0, alpha: 1 },
+};
+
+// Multi-element animation states (for m-1)
+let m1ElementStates = {
+	top: { translateX: 0, translateY: 0, alpha: 1 },
+	bottom: { translateX: 0, translateY: 0, alpha: 1 },
+};
+
+// Multi-element animation states (for m-3)
+let m3ElementStates = {
+	top: { translateX: 0, translateY: 0, alpha: 1 },
+	bottom: { translateX: 0, translateY: 0, alpha: 1 },
+};
+
+// Breathing loop state for m-2 elements
+let m2Breathing = false;
+let m2BreathStart = 0; // timestamp in ms
+// Per-element breathing phase offsets (seconds)
+let m2BreathOffsets = {
+	topLeft: 0,
+	topRight: 0,
+	bottomLeft: 0,
+	bottomRight: 0,
+};
+
+// Breathing loop state for m-1 elements
+let m1Breathing = false;
+let m1BreathStart = 0; // timestamp in ms
+// Per-element breathing phase offsets (seconds)
+let m1BreathOffsets = {
+	top: 0,
+	bottom: 0.5, // offset bottom element by half period
+};
+
+// Breathing loop state for m-3 elements
+let m3Breathing = false;
+let m3BreathStart = 0; // timestamp in ms
+// Per-element breathing phase offsets (seconds)
+let m3BreathOffsets = {
+	top: 0,
+	bottom: 0.7, // offset bottom element by different amount
 };
 
 function previousTemplate() {
@@ -379,6 +448,32 @@ function startTemplateAnimation() {
 		Object.keys(multiElementStates).forEach((key) => {
 			multiElementStates[key] = { translateX: 0, translateY: 0, alpha: 0 };
 		});
+
+		// stop breathing while the entrance animation runs
+		m2Breathing = false;
+		m2BreathStart = 0;
+	}
+
+	// Reset multi-element states for m-1
+	if (currentAnimationConfig?.type === "multiSlideUp") {
+		Object.keys(m1ElementStates).forEach((key) => {
+			m1ElementStates[key] = { translateX: 0, translateY: 0, alpha: 0 };
+		});
+
+		// stop breathing while the entrance animation runs
+		m1Breathing = false;
+		m1BreathStart = 0;
+	}
+
+	// Reset multi-element states for m-3
+	if (currentAnimationConfig?.type === "multiSlideUpAndDown") {
+		Object.keys(m3ElementStates).forEach((key) => {
+			m3ElementStates[key] = { translateX: 0, translateY: 0, alpha: 0 };
+		});
+
+		// stop breathing while the entrance animation runs
+		m3Breathing = false;
+		m3BreathStart = 0;
 	}
 }
 
@@ -411,11 +506,6 @@ const easingFunctions = {
 
 // Animation type implementations
 const animationTypes = {
-	slideUp: (progress) => {
-		const eased = easingFunctions.easeOutBack(progress);
-		const translateX = (1 - eased) * HEIGHT * 0.5; // Slide up from bottom
-		return { scale: 1, rotation: 0, translateX, translateY: 0, alpha: Math.min(progress * 2, 1) };
-	},
 	multiSlideIn: (progress, elementKey, staggerDelay, duration) => {
 		// Calculate staggered progress for each element
 		const elementOrder = { topLeft: 0, topRight: 1, bottomLeft: 2, bottomRight: 3 };
@@ -457,6 +547,51 @@ const animationTypes = {
 
 		return { translateX, translateY, alpha };
 	},
+	multiSlideUp: (progress, elementKey, staggerDelay, duration) => {
+		// Calculate staggered progress for each element
+		const elementOrder = { top: 0, bottom: 1 };
+		const elementIndex = elementOrder[elementKey] || 0;
+		const staggerOffset = (elementIndex * staggerDelay) / duration;
+		const adjustedProgress = Math.max(0, Math.min(1, (progress - staggerOffset) / (1 - staggerOffset)));
+
+		if (adjustedProgress <= 0) {
+			return { translateX: 0, translateY: 0, alpha: 0 };
+		}
+
+		const eased = easingFunctions.easeOutBack(adjustedProgress);
+
+		// Both elements slide from right
+		const startX = WIDTH * 0.8; // Start off the right side
+		const translateX = startX * (1 - eased);
+		const alpha = Math.min(adjustedProgress * 2, 1);
+
+		return { translateX, translateY: 0, alpha };
+	},
+	multiSlideUpAndDown: (progress, elementKey, staggerDelay, duration) => {
+		// Calculate staggered progress for each element
+		const elementOrder = { top: 0, bottom: 1 };
+		const elementIndex = elementOrder[elementKey] || 0;
+		const staggerOffset = (elementIndex * staggerDelay) / duration;
+		const adjustedProgress = Math.max(0, Math.min(1, (progress - staggerOffset) / (1 - staggerOffset)));
+
+		if (adjustedProgress <= 0) {
+			return { translateX: 0, translateY: 0, alpha: 0 };
+		}
+
+		const eased = easingFunctions.easeOutBack(adjustedProgress);
+
+		// Top element slides from left, bottom element slides from right
+		let startX = 0;
+		if (elementKey === "top") {
+			startX = -WIDTH * 0.1; // Start off the left side
+		} else if (elementKey === "bottom") {
+			startX = WIDTH * 0.8; // Start off the right side
+		}
+		const translateX = startX * (1 - eased);
+		const alpha = Math.min(adjustedProgress * 2, 1);
+
+		return { translateX, translateY: 0, alpha };
+	},
 	bounceScale: (progress) => {
 		const scale = easingFunctions.easeOutBounce(progress);
 		return { scale, rotation: 0, translateX: 0, translateY: 0, alpha: Math.min(progress * 1.5, 1) };
@@ -487,6 +622,28 @@ function updateAnimation() {
 			);
 			multiElementStates[elementKey] = elementState;
 		});
+	} else if (currentAnimationConfig.type === "multiSlideUp") {
+		// Handle multi-element animations (m-1)
+		currentAnimationConfig.elements.forEach((elementKey) => {
+			const elementState = animationTypes.multiSlideUp(
+				progress,
+				elementKey,
+				currentAnimationConfig.staggerDelay,
+				currentAnimationConfig.duration
+			);
+			m1ElementStates[elementKey] = elementState;
+		});
+	} else if (currentAnimationConfig.type === "multiSlideUpAndDown") {
+		// Handle multi-element animations (m-3)
+		currentAnimationConfig.elements.forEach((elementKey) => {
+			const elementState = animationTypes.multiSlideUpAndDown(
+				progress,
+				elementKey,
+				currentAnimationConfig.staggerDelay,
+				currentAnimationConfig.duration
+			);
+			m3ElementStates[elementKey] = elementState;
+		});
 	} else {
 		// Handle single-element animations
 		const animationType = animationTypes[currentAnimationConfig.type];
@@ -503,6 +660,40 @@ function updateAnimation() {
 			currentAnimationConfig.elements.forEach((elementKey) => {
 				multiElementStates[elementKey] = { translateX: 0, translateY: 0, alpha: 1 };
 			});
+
+			// Start subtle breathing loop for m-2
+			m2Breathing = true;
+			m2BreathStart = performance.now();
+
+			// Stagger breathing offsets so each element is out-of-sync
+			// Use a quarter-period offset for each corner plus a small random jitter
+			{
+				const period = 3.0; // must match draw breathing period
+				const elementOrder = { topLeft: 0, topRight: 1, bottomLeft: 2, bottomRight: 3 };
+				Object.keys(m2BreathOffsets).forEach((key) => {
+					const baseOffset = (elementOrder[key] / 4) * period;
+					const jitter = (Math.random() - 0.5) * 0.2; // +/-100ms jitter
+					m2BreathOffsets[key] = baseOffset + jitter;
+				});
+			}
+		} else if (currentAnimationConfig.type === "multiSlideUp") {
+			// Reset multi-element states to final positions for m-1
+			currentAnimationConfig.elements.forEach((elementKey) => {
+				m1ElementStates[elementKey] = { translateX: 0, translateY: 0, alpha: 1 };
+			});
+
+			// Start subtle breathing loop for m-1
+			m1Breathing = true;
+			m1BreathStart = performance.now();
+		} else if (currentAnimationConfig.type === "multiSlideUpAndDown") {
+			// Reset multi-element states to final positions for m-3
+			currentAnimationConfig.elements.forEach((elementKey) => {
+				m3ElementStates[elementKey] = { translateX: 0, translateY: 0, alpha: 1 };
+			});
+
+			// Start subtle breathing loop for m-3
+			m3Breathing = true;
+			m3BreathStart = performance.now();
 		} else {
 			animationState = { scale: 1, rotation: 0, translateX: 0, translateY: 0, alpha: 1 };
 		}
@@ -515,8 +706,97 @@ function drawTemplateElements(ctx) {
 	// Update animation state
 	updateAnimation();
 
-	// Handle m-2 multi-element animation
-	if (templateIndex === 1 && (isAnimating || currentAnimationConfig?.type === "multiSlideIn")) {
+	// Handle m-1 multi-element animation
+	if (templateIndex === 0 && (isAnimating || currentAnimationConfig?.type === "multiSlideUp")) {
+		// Draw each m-1 element separately at natural size
+		Object.keys(m1Elements).forEach((elementKey) => {
+			const element = m1Elements[elementKey];
+			const state = m1ElementStates[elementKey];
+
+			if (element && element.complete && state.alpha > 0) {
+				ctx.save();
+
+				ctx.globalAlpha = state.alpha;
+
+				// Both elements are full canvas size, draw at 0,0
+				const finalX = 0 + state.translateX;
+				const finalY = 0 + state.translateY;
+
+				// If breathing enabled, compute a subtle scale factor
+				let breathScale = 1;
+				if (m1Breathing) {
+					// 5s full period (in/out), small amplitude
+					const elapsedGlobal = (performance.now() - m1BreathStart) / 1000; // seconds
+					const period = 5.0; // seconds for a full inhale+exhale
+					const omega = (2 * Math.PI) / period;
+					// sine oscillation in [-1,1], map to [1 - a, 1 + a]
+					const amplitude = 0.02; // 2% scale
+					// Apply per-element offset so each element is out of sync
+					const offset = m1BreathOffsets[elementKey] || 0;
+					const elapsed = elapsedGlobal + offset;
+					breathScale = 1 + Math.sin(elapsed * omega) * amplitude;
+				}
+
+				// Draw element; if breathing, scale around center so it 'breathes' in place
+				ctx.save();
+				const centerX = finalX + WIDTH / 2;
+				const centerY = finalY + HEIGHT / 2;
+				ctx.translate(centerX, centerY);
+				if (m1Breathing) {
+					ctx.scale(breathScale, breathScale);
+				}
+				ctx.drawImage(element, -WIDTH / 2, -HEIGHT / 2, WIDTH, HEIGHT);
+				ctx.restore();
+
+				ctx.restore();
+			}
+		});
+	} else if (templateIndex === 2 && (isAnimating || currentAnimationConfig?.type === "multiSlideUpAndDown")) {
+		// Draw each m-3 element separately at natural size
+		Object.keys(m3Elements).forEach((elementKey) => {
+			const element = m3Elements[elementKey];
+			const state = m3ElementStates[elementKey];
+
+			if (element && element.complete && state.alpha > 0) {
+				ctx.save();
+
+				ctx.globalAlpha = state.alpha;
+
+				// Both elements are full canvas size, draw at 0,0
+				const finalX = 0 + state.translateX;
+				const finalY = 0 + state.translateY;
+
+				// If breathing enabled, compute a subtle scale factor
+				let breathScale = 1;
+				if (m3Breathing) {
+					// 5s full period (in/out), small amplitude
+					const elapsedGlobal = (performance.now() - m3BreathStart) / 1000; // seconds
+					const period = 5.0; // seconds for a full inhale+exhale
+					const omega = (2 * Math.PI) / period;
+					// sine oscillation in [-1,1], map to [1 - a, 1 + a]
+					const amplitude = 0.02; // 2% scale
+					// Apply per-element offset so each element is out of sync
+					const offset = m3BreathOffsets[elementKey] || 0;
+					const elapsed = elapsedGlobal + offset;
+					breathScale = 1 + Math.sin(elapsed * omega) * amplitude;
+				}
+
+				// Draw element; if breathing, scale around center so it 'breathes' in place
+				ctx.save();
+				const centerX = finalX + WIDTH / 2;
+				const centerY = finalY + HEIGHT / 2;
+				ctx.translate(centerX, centerY);
+				if (m3Breathing) {
+					ctx.scale(breathScale, breathScale);
+				}
+				ctx.drawImage(element, -WIDTH / 2, -HEIGHT / 2, WIDTH, HEIGHT);
+				ctx.restore();
+
+				ctx.restore();
+			}
+		});
+	} else if (templateIndex === 1 && (isAnimating || currentAnimationConfig?.type === "multiSlideIn")) {
+		// Handle m-2 multi-element animation
 		// Draw each m-2 element separately at natural size, anchored to corners
 		Object.keys(m2Elements).forEach((elementKey) => {
 			const element = m2Elements[elementKey];
@@ -553,8 +833,42 @@ function drawTemplateElements(ctx) {
 				const finalX = anchorX + state.translateX;
 				const finalY = anchorY + state.translateY;
 
-				// Draw element at natural size
-				ctx.drawImage(element, finalX, finalY, element.naturalWidth, element.naturalHeight);
+				// If breathing enabled, compute a subtle scale factor (e.g., 0.98 - 1.02)
+				let drawWidth = element.naturalWidth;
+				let drawHeight = element.naturalHeight;
+				let breathScale = 1;
+				if (m2Breathing) {
+					// 5s full period (in/out), small amplitude
+					const elapsedGlobal = (performance.now() - m2BreathStart) / 1000; // seconds
+					const period = 5.0; // seconds for a full inhale+exhale
+					const omega = (2 * Math.PI) / period;
+					// sine oscillation in [-1,1], map to [1 - a, 1 + a]
+					const amplitude = 0.02; // 2% scale
+					// Apply per-element offset so each element is out of sync
+					const offset = m2BreathOffsets[elementKey] || 0;
+					const elapsed = elapsedGlobal + offset;
+					breathScale = 1 + Math.sin(elapsed * omega) * amplitude;
+					// apply to draw size (kept for legacy, but drawing uses center-scale now)
+					drawWidth = element.naturalWidth * breathScale;
+					drawHeight = element.naturalHeight * breathScale;
+				}
+
+				// Draw element; if breathing, scale around element center so it 'breathes' in place
+				ctx.save();
+				const centerX = finalX + element.naturalWidth / 2;
+				const centerY = finalY + element.naturalHeight / 2;
+				ctx.translate(centerX, centerY);
+				if (m2Breathing) {
+					ctx.scale(breathScale, breathScale);
+				}
+				ctx.drawImage(
+					element,
+					-element.naturalWidth / 2,
+					-element.naturalHeight / 2,
+					element.naturalWidth,
+					element.naturalHeight
+				);
+				ctx.restore();
 
 				ctx.restore();
 			}
