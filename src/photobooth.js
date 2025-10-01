@@ -712,8 +712,18 @@ document.addEventListener("DOMContentLoaded", () => {
 		idleTime = 0;
 	}
 
-	// Timer Interval
+	// Idle Timer Interval
 	timeoutInterval = setInterval(() => {
+		try {
+			const callToActionEl = document.getElementById("callToAction");
+			if (callToActionEl && getComputedStyle(callToActionEl).display !== "none") {
+				idleTime = 0;
+				return;
+			}
+		} catch (e) {
+			console.warn("Idle timer visibility check failed:", e);
+		}
+
 		idleTime += 1;
 		if (idleTime > maxIdleTimer) {
 			goBackToStart();
@@ -721,10 +731,6 @@ document.addEventListener("DOMContentLoaded", () => {
 			clearInterval(timeoutInterval);
 		}
 	}, 1000);
-
-	document.getElementById("videoXOffset").addEventListener("input", (event) => {
-		videoXOffset = -parseInt(event.target.value);
-	});
 });
 
 let timeoutInterval = null;
