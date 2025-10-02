@@ -1144,13 +1144,40 @@ document.addEventListener("DOMContentLoaded", () => {
 		// flip vertically (selfie cam)
 		canvasCtx.scale(-1, 1);
 
-		// (landscape cam) - draw from center after rotation
+		// Calculate crop dimensions for landscape video to portrait canvas
+		// Video is landscape (wider than tall), canvas is portrait (taller than wide)
+		const videoAspectRatio = videoElement.videoWidth / videoElement.videoHeight;
+		const canvasAspectRatio = canvasElement.height / canvasElement.width; // swapped due to rotation
+
+		let cropWidth, cropHeight, cropX, cropY;
+		let drawWidth = canvasElement.height;
+		let drawHeight = canvasElement.width;
+
+		if (videoAspectRatio > canvasAspectRatio) {
+			// Video is wider relative to canvas - crop horizontally
+			cropHeight = videoElement.videoHeight;
+			cropWidth = cropHeight * canvasAspectRatio;
+			cropX = (videoElement.videoWidth - cropWidth) / 2;
+			cropY = 0;
+		} else {
+			// Video is taller relative to canvas - crop vertically
+			cropWidth = videoElement.videoWidth;
+			cropHeight = cropWidth / canvasAspectRatio;
+			cropX = 0;
+			cropY = (videoElement.videoHeight - cropHeight) / 2;
+		}
+
+		// (landscape cam) - draw cropped video from center after rotation
 		canvasCtx.drawImage(
 			videoElement,
-			-canvasElement.height / 2,
-			-canvasElement.width / 2,
-			canvasElement.height,
-			canvasElement.width
+			cropX,
+			cropY,
+			cropWidth,
+			cropHeight,
+			-drawWidth / 2,
+			-drawHeight / 2,
+			drawWidth,
+			drawHeight
 		);
 
 		// Restore the context to its original state
