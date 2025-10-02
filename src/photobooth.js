@@ -32,6 +32,7 @@ const m1ElementPaths = {
 // m-3 multi-element paths
 const m3ElementPaths = {
 	top: "./templates/m-3-top.png",
+	topBlink: "./templates/m-3-top-blink.png",
 	bottom: "./templates/m-3-bottom.png",
 	chips: "./templates/m-3-chips.png",
 };
@@ -156,6 +157,10 @@ let m3BreathOffsets = {
 	bottom: 0.7, // offset bottom element by different amount
 	chips: 1.4, // offset chips element by different amount (not used for falling)
 };
+
+// M-3 top element blinking state
+let m3TopBlinking = false;
+let m3LastBlinkTime = 0;
 
 // Chips falling animation state
 let m3ChipsFalling = false;
@@ -481,6 +486,8 @@ function startTemplateAnimation() {
 		// stop breathing while the entrance animation runs
 		m3Breathing = false;
 		m3BreathStart = 0;
+		m3TopBlinking = false;
+		m3LastBlinkTime = 0;
 
 		// stop chips falling while the entrance animation runs
 		m3ChipsFalling = false;
@@ -739,6 +746,8 @@ function updateAnimation() {
 			// Start subtle breathing loop for m-3 (only bottom element)
 			m3Breathing = true;
 			m3BreathStart = performance.now();
+			m3TopBlinking = false;
+			m3LastBlinkTime = 0;
 
 			// Start chips falling animation
 			m3ChipsFalling = true;
@@ -893,6 +902,35 @@ function drawTemplateElements(ctx) {
 						breathScale = 1 + Math.sin(elapsed * omega) * amplitude;
 					}
 
+					// Handle blinking for top element
+					let elementToDraw = element;
+					if (elementKey === "top" && m3Breathing) {
+						const elapsedGlobal = (performance.now() - m3BreathStart) / 1000; // seconds
+						const period = 5.0; // 5-second breathing cycle
+						const currentCycle = Math.floor(elapsedGlobal / period);
+
+						// Check if we're in a new cycle and haven't blinked yet
+						if (currentCycle > Math.floor(m3LastBlinkTime / period)) {
+							// Start a new blink
+							m3TopBlinking = true;
+							m3LastBlinkTime = elapsedGlobal;
+						}
+
+						// If we're blinking, check if blink duration has passed
+						if (m3TopBlinking) {
+							const timeSinceBlinkStart = elapsedGlobal - m3LastBlinkTime;
+							const blinkDuration = 0.15; // 150ms blink duration
+
+							if (timeSinceBlinkStart < blinkDuration) {
+								// Show blink image
+								elementToDraw = m3Elements.topBlink;
+							} else {
+								// End blink
+								m3TopBlinking = false;
+							}
+						}
+					}
+
 					// Draw element; if breathing (only bottom), scale around center so it 'breathes' in place
 					ctx.save();
 					const centerX = finalX + WIDTH / 2;
@@ -901,7 +939,7 @@ function drawTemplateElements(ctx) {
 					if (m3Breathing && elementKey === "bottom") {
 						ctx.scale(breathScale, breathScale);
 					}
-					ctx.drawImage(element, -WIDTH / 2, -HEIGHT / 2, WIDTH, HEIGHT);
+					ctx.drawImage(elementToDraw, -WIDTH / 2, -HEIGHT / 2, WIDTH, HEIGHT);
 					ctx.restore();
 
 					ctx.restore();
