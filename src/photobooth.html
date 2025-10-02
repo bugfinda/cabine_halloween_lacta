@@ -45,11 +45,7 @@
 		<div class="click-text-container" style="opacity: 0;">
 			<img src="./imgs/click_text.png">
 		</div>
-		<!-- back to cta btn -->
-		<button id="changeOverlaysBtn" class="button-capture" style="bottom: 210px; visibility: hidden;"
-			onclick="goBackToCallToAction()">
-			<img id="underlayBtnImg" src="./templates/options.jpg" alt="underlay" />
-		</button>
+
 	</div>
 	<!-- timer -->
 	<div id="snapshotTimer" class="timer-container"></div>
@@ -87,8 +83,6 @@
 			<p id="notification"></p>
 		</div>
 	</div>
-
-	<img src="./templates/qrCodeScreen.jpg" style="display: none;">
 
 	<!-- videoXOffset slider -->
 	<input id="videoXOffset" type="range" min="0" max="1000" value="0" class="slider"
@@ -313,12 +307,6 @@
 		backdrop-filter: none;
 	}
 
-	#underlayBtnImg {
-		width: 100px;
-		height: 100px;
-		object-fit: contain;
-		transform: rotate(90deg);
-	}
 
 	.timer-container {
 		display: none;

@@ -33,6 +33,7 @@ const m1ElementPaths = {
 const m3ElementPaths = {
 	top: "./templates/m-3-top.png",
 	bottom: "./templates/m-3-bottom.png",
+	chips: "./templates/m-3-chips.png",
 };
 
 let templateIndex = 0;
@@ -87,7 +88,7 @@ const animationConfigs = {
 		// Template m-3: Multi-element slide up and down
 		type: "multiSlideUpAndDown",
 		duration: 600,
-		elements: ["top", "bottom"],
+		elements: ["top", "bottom", "chips"],
 		staggerDelay: 150, // Delay between each element starting
 	},
 };
@@ -123,6 +124,7 @@ let m1ElementStates = {
 let m3ElementStates = {
 	top: { translateX: 0, translateY: 0, alpha: 1 },
 	bottom: { translateX: 0, translateY: 0, alpha: 1 },
+	chips: { translateX: 0, translateY: 0, alpha: 1 },
 };
 
 // Breathing loop state for m-2 elements
@@ -152,7 +154,12 @@ let m3BreathStart = 0; // timestamp in ms
 let m3BreathOffsets = {
 	top: 0,
 	bottom: 0.7, // offset bottom element by different amount
+	chips: 1.4, // offset chips element by different amount (not used for falling)
 };
+
+// Chips falling animation state
+let m3ChipsFalling = false;
+let m3ChipsFallStart = 0; // timestamp in ms
 
 function previousTemplate() {
 	templateIndex = templateIndex - 1;
@@ -474,6 +481,10 @@ function startTemplateAnimation() {
 		// stop breathing while the entrance animation runs
 		m3Breathing = false;
 		m3BreathStart = 0;
+
+		// stop chips falling while the entrance animation runs
+		m3ChipsFalling = false;
+		m3ChipsFallStart = 0;
 	}
 }
 
@@ -568,6 +579,22 @@ const animationTypes = {
 		return { translateX, translateY: 0, alpha };
 	},
 	multiSlideUpAndDown: (progress, elementKey, staggerDelay, duration) => {
+		// Handle chips element with fade-in animation
+		if (elementKey === "chips") {
+			const elementOrder = { top: 0, bottom: 1, chips: 2 };
+			const elementIndex = elementOrder[elementKey];
+			const staggerOffset = (elementIndex * staggerDelay) / duration;
+			const adjustedProgress = Math.max(0, Math.min(1, (progress - staggerOffset) / (1 - staggerOffset * 2)));
+
+			if (adjustedProgress <= 0) {
+				return { translateX: 0, translateY: 0, alpha: 0 };
+			}
+
+			// Simple fade-in for chips
+			const alpha = Math.min(adjustedProgress * 1.5, 1);
+			return { translateX: 0, translateY: 0, alpha };
+		}
+
 		// Calculate staggered progress for each element
 		const elementOrder = { top: 0, bottom: 1 };
 		const elementIndex = elementOrder[elementKey] || 0;
@@ -691,9 +718,13 @@ function updateAnimation() {
 				m3ElementStates[elementKey] = { translateX: 0, translateY: 0, alpha: 1 };
 			});
 
-			// Start subtle breathing loop for m-3
+			// Start subtle breathing loop for m-3 (only bottom element)
 			m3Breathing = true;
 			m3BreathStart = performance.now();
+
+			// Start chips falling animation
+			m3ChipsFalling = true;
+			m3ChipsFallStart = performance.now();
 		} else {
 			animationState = { scale: 1, rotation: 0, translateX: 0, translateY: 0, alpha: 1 };
 		}
@@ -753,46 +784,97 @@ function drawTemplateElements(ctx) {
 		});
 	} else if (templateIndex === 2 && (isAnimating || currentAnimationConfig?.type === "multiSlideUpAndDown")) {
 		// Draw each m-3 element separately at natural size
-		Object.keys(m3Elements).forEach((elementKey) => {
+		// Draw chips first so they stay behind top and bottom elements
+		const drawOrder = ["chips", "top", "bottom"];
+
+		drawOrder.forEach((elementKey) => {
 			const element = m3Elements[elementKey];
 			const state = m3ElementStates[elementKey];
 
 			if (element && element.complete && state.alpha > 0) {
-				ctx.save();
+				// Handle chips element with falling animation
+				if (elementKey === "chips" && m3ChipsFalling) {
+					// Interpolated chip animation with mirrored copy
+					const currentTime = performance.now();
+					const elapsedTime = (currentTime - m3ChipsFallStart) / 1000; // seconds
 
-				ctx.globalAlpha = state.alpha;
+					// Loop duration: 10 seconds for complete traversal cycle
+					const loopDuration = 10.0;
+					const progress = (elapsedTime % loopDuration) / loopDuration; // 0 to 1
 
-				// Both elements are full canvas size, draw at 0,0
-				const finalX = 0 + state.translateX;
-				const finalY = 0 + state.translateY;
+					// Calculate positions for both chips
+					const startX = -element.naturalWidth;
+					const endX = WIDTH + element.naturalWidth;
 
-				// If breathing enabled, compute a subtle scale factor
-				let breathScale = 1;
-				if (m3Breathing) {
-					// 5s full period (in/out), small amplitude
-					const elapsedGlobal = (performance.now() - m3BreathStart) / 1000; // seconds
-					const period = 5.0; // seconds for a full inhale+exhale
-					const omega = (2 * Math.PI) / period;
-					// sine oscillation in [-1,1], map to [1 - a, 1 + a]
-					const amplitude = 0.02; // 2% scale
-					// Apply per-element offset so each element is out of sync
-					const offset = m3BreathOffsets[elementKey] || 0;
-					const elapsed = elapsedGlobal + offset;
-					breathScale = 1 + Math.sin(elapsed * omega) * amplitude;
+					// First chip (normal)
+					const currentX1 = startX + (endX - startX) * progress;
+
+					// Second chip (mirrored, starts halfway through)
+					const progress2 = ((elapsedTime + loopDuration / 2) % loopDuration) / loopDuration;
+					const currentX2 = startX + (endX - startX) * progress2;
+
+					// Fixed Y position (center of screen)
+					const currentY = HEIGHT / 2 - element.naturalHeight / 2;
+
+					ctx.save();
+					ctx.globalAlpha = state.alpha;
+
+					// Draw the first chip (normal)
+					ctx.drawImage(element, currentX1, currentY, element.naturalWidth, element.naturalHeight);
+
+					// Draw the second chip (mirrored vertically)
+					ctx.save();
+					ctx.translate(currentX2 + element.naturalWidth / 2, currentY + element.naturalHeight / 2);
+					ctx.scale(1, -1); // Mirror vertically
+					ctx.drawImage(
+						element,
+						-element.naturalWidth / 2,
+						-element.naturalHeight / 2,
+						element.naturalWidth,
+						element.naturalHeight
+					);
+					ctx.restore();
+
+					ctx.restore();
+				} else if (elementKey === "chips") {
+					// Don't draw chips if falling animation hasn't started yet
+					// This prevents the blinking at (0,0) position during entrance animation
+				} else {
+					// Handle top and bottom elements normally
+					ctx.save();
+					ctx.globalAlpha = state.alpha;
+
+					const finalX = 0 + state.translateX;
+					const finalY = 0 + state.translateY;
+
+					// If breathing enabled, compute a subtle scale factor (only for bottom element)
+					let breathScale = 1;
+					if (m3Breathing && elementKey === "bottom") {
+						// 5s full period (in/out), small amplitude
+						const elapsedGlobal = (performance.now() - m3BreathStart) / 1000; // seconds
+						const period = 5.0; // seconds for a full inhale+exhale
+						const omega = (2 * Math.PI) / period;
+						// sine oscillation in [-1,1], map to [1 - a, 1 + a]
+						const amplitude = 0.02; // 2% scale
+						// Apply per-element offset so each element is out of sync
+						const offset = m3BreathOffsets[elementKey] || 0;
+						const elapsed = elapsedGlobal + offset;
+						breathScale = 1 + Math.sin(elapsed * omega) * amplitude;
+					}
+
+					// Draw element; if breathing (only bottom), scale around center so it 'breathes' in place
+					ctx.save();
+					const centerX = finalX + WIDTH / 2;
+					const centerY = finalY + HEIGHT / 2;
+					ctx.translate(centerX, centerY);
+					if (m3Breathing && elementKey === "bottom") {
+						ctx.scale(breathScale, breathScale);
+					}
+					ctx.drawImage(element, -WIDTH / 2, -HEIGHT / 2, WIDTH, HEIGHT);
+					ctx.restore();
+
+					ctx.restore();
 				}
-
-				// Draw element; if breathing, scale around center so it 'breathes' in place
-				ctx.save();
-				const centerX = finalX + WIDTH / 2;
-				const centerY = finalY + HEIGHT / 2;
-				ctx.translate(centerX, centerY);
-				if (m3Breathing) {
-					ctx.scale(breathScale, breathScale);
-				}
-				ctx.drawImage(element, -WIDTH / 2, -HEIGHT / 2, WIDTH, HEIGHT);
-				ctx.restore();
-
-				ctx.restore();
 			}
 		});
 	} else if (templateIndex === 1 && (isAnimating || currentAnimationConfig?.type === "multiSlideIn")) {
