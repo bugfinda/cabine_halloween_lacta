@@ -1196,6 +1196,57 @@ document.addEventListener("DOMContentLoaded", () => {
 			clearInterval(timeoutInterval);
 		}
 	}, 1000);
+
+	// Swipe detection variables
+	let touchStartX = 0;
+	let touchStartY = 0;
+	let touchEndX = 0;
+	let touchEndY = 0;
+	const minSwipeDistance = 50; // Minimum distance for a swipe
+	const maxVerticalDistance = 100; // Maximum vertical distance to still consider it a horizontal swipe
+
+	// Touch event handlers for swipe detection
+	document.addEventListener(
+		"touchstart",
+		(e) => {
+			touchStartX = e.changedTouches[0].screenX;
+			touchStartY = e.changedTouches[0].screenY;
+		},
+		{ passive: true }
+	);
+
+	document.addEventListener(
+		"touchend",
+		(e) => {
+			touchEndX = e.changedTouches[0].screenX;
+			touchEndY = e.changedTouches[0].screenY;
+			handleSwipe();
+		},
+		{ passive: true }
+	);
+
+	// Swipe detection function
+	function handleSwipe() {
+		// Only detect swipes when overlays are visible (template selection mode)
+		const overlaysEl = document.getElementById("overlays");
+		if (!overlaysEl || getComputedStyle(overlaysEl).display === "none") {
+			return;
+		}
+
+		const horizontalDistance = touchEndX - touchStartX;
+		const verticalDistance = Math.abs(touchEndY - touchStartY);
+
+		// Check if it's a valid horizontal swipe
+		if (Math.abs(horizontalDistance) > minSwipeDistance && verticalDistance < maxVerticalDistance) {
+			if (horizontalDistance > 0) {
+				// Swipe right - go to previous template
+				previousTemplate();
+			} else {
+				// Swipe left - go to next template
+				nextTemplate();
+			}
+		}
+	}
 });
 
 let timeoutInterval = null;
