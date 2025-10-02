@@ -1253,6 +1253,6 @@ let timeoutInterval = null;
 
 // QR Code Timer variables
 let qrTimer = null;
-let qrTimeRemaining = 30; // seconds
-let qrTotalTime = 30;
+let qrTimeRemaining = 24; // seconds
+let qrTotalTime = 24;
 let isQrTimerActive = false;

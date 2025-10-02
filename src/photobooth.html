@@ -62,11 +62,9 @@
 		</div>
 	</div>
 	<!-- end panel -->
-	<div id="endBackPanel" class="end-back-panel" onclick="goBackToStart()">
-
-	</div>
+	<div id="endBackPanel" class="end-back-panel"></div>
 	<!-- qrcode -->
-	<div id="qrcode" onclick="goBackToStart()"></div>
+	<div id="qrcode"></div>
 
 	<!-- qr timer controls -->
 	<div id="qrTimerControls" style="display: none;">
@@ -349,7 +347,7 @@
 
 	#qrcode {
 		position: absolute;
-		top: 75.2%;
+		top: 70%;
 		left: 49.1%;
 		transform: translate(-50%, -50%);
 		width: 400px;
@@ -366,7 +364,7 @@
 
 	#qrTimerControls {
 		position: absolute;
-		top: 89%;
+		top: 85%;
 		left: 49.1%;
 		transform: translate(-50%, -50%);
 		width: 420px;
@@ -374,7 +372,7 @@
 		display: none;
 		flex-direction: column;
 		align-items: center;
-		gap: 10px;
+		gap: 20px;
 	}
 
 	.qr-progress-container {
@@ -395,13 +393,13 @@
 	}
 
 	.add-time-btn {
-		padding: 12px 20px;
+		padding: 20px;
 		background: rgba(255, 255, 255, 0.9);
 		color: #da291c;
 		border: none;
 		border-radius: 25px;
 		font-family: "Ringside";
-		font-size: 16px;
+		font-size: 20px;
 		font-weight: bold;
 		cursor: pointer;
 		transition: all 0.2s ease;
