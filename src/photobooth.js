@@ -82,7 +82,7 @@ const animationConfigs = {
 		type: "multiSlideIn",
 		duration: 500,
 		elements: ["topLeft", "topRight", "bottomLeft", "bottomRight"],
-		staggerDelay: 50, // Delay between each element starting
+		staggerDelay: 20, // Delay between each element starting
 	},
 	2: {
 		// Template m-3: Multi-element slide up and down
