@@ -73,9 +73,9 @@ const animationConfigs = {
 	0: {
 		// Template m-1: Multi-element slide up
 		type: "multiSlideUp",
-		duration: 500,
+		duration: 800,
 		elements: ["top", "bottom"],
-		staggerDelay: 200, // Delay between each element starting
+		staggerDelay: 300, // Delay between each element starting
 	},
 	1: {
 		// Template m-2: Multi-element slide from corners
@@ -87,9 +87,9 @@ const animationConfigs = {
 	2: {
 		// Template m-3: Multi-element slide up and down
 		type: "multiSlideUpAndDown",
-		duration: 600,
+		duration: 500,
 		elements: ["top", "bottom", "chips"],
-		staggerDelay: 150, // Delay between each element starting
+		staggerDelay: 250, // Delay between each element starting
 	},
 };
 
@@ -495,6 +495,12 @@ const easingFunctions = {
 		const c3 = c1 + 1;
 		return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 	},
+	// A gentler back easing with reduced overshoot for subtler bounce
+	easeOutBackGentle: (t) => {
+		const c1 = 0.8; // smaller overshoot than easeOutBack
+		const c3 = c1 + 1;
+		return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+	},
 	easeOutBounce: (t) => {
 		const n1 = 7.5625;
 		const d1 = 2.75;
@@ -569,7 +575,11 @@ const animationTypes = {
 			return { translateX: 0, translateY: 0, alpha: 0 };
 		}
 
-		const eased = easingFunctions.easeOutBack(adjustedProgress);
+		// Use a gentler back easing for the bottom element to reduce overshoot
+		const eased =
+			elementKey === "bottom"
+				? easingFunctions.easeOutBackGentle(adjustedProgress)
+				: easingFunctions.easeOutBack(adjustedProgress);
 
 		// Both elements slide from right
 		const startX = WIDTH * 0.8; // Start off the right side
@@ -612,7 +622,7 @@ const animationTypes = {
 		if (elementKey === "top") {
 			startX = -WIDTH * 0.1; // Start off the left side
 		} else if (elementKey === "bottom") {
-			startX = WIDTH * 0.8; // Start off the right side
+			startX = WIDTH * 0.3; // Start off the right side
 		}
 		const translateX = startX * (1 - eased);
 		const alpha = Math.min(adjustedProgress * 2, 1);
@@ -809,9 +819,11 @@ function drawTemplateElements(ctx) {
 					// First chip (normal)
 					const currentX1 = startX + (endX - startX) * progress;
 
-					// Second chip (mirrored, starts halfway through)
-					const progress2 = ((elapsedTime + loopDuration / 2) % loopDuration) / loopDuration;
-					const currentX2 = startX + (endX - startX) * progress2;
+					// Second chip (mirrored, starts halfway through but offset to stay off-screen initially)
+					const progress2 = (elapsedTime % loopDuration) / loopDuration;
+					// Offset the second chip by half a loop so it starts when first chip is halfway
+					const offsetProgress2 = (progress2 - 0.5 + 1) % 1; // Ensures it starts off-screen
+					const currentX2 = startX + 300 + (endX - startX) * offsetProgress2;
 
 					// Fixed Y position (center of screen)
 					const currentY = HEIGHT / 2 - element.naturalHeight / 2;
