@@ -73,7 +73,7 @@ const animationConfigs = {
 	0: {
 		// Template m-1: Multi-element slide up
 		type: "multiSlideUp",
-		duration: 800,
+		duration: 600,
 		elements: ["top", "bottom"],
 		staggerDelay: 300, // Delay between each element starting
 	},
@@ -722,6 +722,14 @@ function updateAnimation() {
 			// Start subtle breathing loop for m-1
 			m1Breathing = true;
 			m1BreathStart = performance.now();
+
+			// Initialize breathing offsets to start from neutral positions
+			// Calculate offsets so that each element starts at neutral (sin = 0)
+			const period = 5.0; // must match breathing period in draw function
+			m1BreathOffsets = {
+				top: 0,
+				bottom: period / 4, // quarter period offset so they're out of sync but start neutral
+			};
 		} else if (currentAnimationConfig.type === "multiSlideUpAndDown") {
 			// Reset multi-element states to final positions for m-3
 			currentAnimationConfig.elements.forEach((elementKey) => {
@@ -763,9 +771,10 @@ function drawTemplateElements(ctx) {
 				const finalX = 0 + state.translateX;
 				const finalY = 0 + state.translateY;
 
-				// If breathing enabled, compute a subtle scale factor
+				// If breathing enabled and not animating, compute a subtle scale factor with gentle erratic rotation
 				let breathScale = 1;
-				if (m1Breathing) {
+				let erraticRotation = 0;
+				if (m1Breathing && !isAnimating) {
 					// 5s full period (in/out), small amplitude
 					const elapsedGlobal = (performance.now() - m1BreathStart) / 1000; // seconds
 					const period = 5.0; // seconds for a full inhale+exhale
@@ -776,14 +785,24 @@ function drawTemplateElements(ctx) {
 					const offset = m1BreathOffsets[elementKey] || 0;
 					const elapsed = elapsedGlobal + offset;
 					breathScale = 1 + Math.sin(elapsed * omega) * amplitude;
-				}
 
-				// Draw element; if breathing, scale around center so it 'breathes' in place
+					// Add gentle erratic rotation - subtle random rotation
+					const rotationPeriod1 = 3.2; // primary rotation period
+					const rotationPeriod2 = 4.7; // secondary rotation period for complexity
+					const rotationAmplitude = 0.015; // radians (~0.86 degrees max)
+					const rotationOmega1 = (2 * Math.PI) / rotationPeriod1;
+					const rotationOmega2 = (2 * Math.PI) / rotationPeriod2;
+					// Combine two sine waves with different frequencies and phase offsets for erratic feel
+					const rotation1 = Math.sin((elapsed + offset) * rotationOmega1) * rotationAmplitude;
+					const rotation2 = Math.sin((elapsed + offset * 1.7) * rotationOmega2 * 0.6) * rotationAmplitude * 0.4;
+					erraticRotation = rotation1 + rotation2;
+				} // Draw element; if breathing and not animating, scale and rotate around center
 				ctx.save();
 				const centerX = finalX + WIDTH / 2;
 				const centerY = finalY + HEIGHT / 2;
 				ctx.translate(centerX, centerY);
-				if (m1Breathing) {
+				if (m1Breathing && !isAnimating) {
+					ctx.rotate(erraticRotation);
 					ctx.scale(breathScale, breathScale);
 				}
 				ctx.drawImage(element, -WIDTH / 2, -HEIGHT / 2, WIDTH, HEIGHT);
