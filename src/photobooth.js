@@ -1135,12 +1135,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		canvasCtx.save();
 
+		// Move to center for rotation
+		canvasCtx.translate(canvasElement.width / 2, canvasElement.height / 2);
+
+		// Rotate -90 degrees (π/2 radians)
+		canvasCtx.rotate(-Math.PI / 2);
+
 		// flip vertically (selfie cam)
 		canvasCtx.scale(-1, 1);
-		canvasCtx.translate(-canvasElement.width, 0);
 
-		// (landscape cam)
-		canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+		// (landscape cam) - draw from center after rotation
+		canvasCtx.drawImage(
+			videoElement,
+			-canvasElement.height / 2,
+			-canvasElement.width / 2,
+			canvasElement.height,
+			canvasElement.width
+		);
 
 		// Restore the context to its original state
 		canvasCtx.restore();
