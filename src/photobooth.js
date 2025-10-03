@@ -3,6 +3,10 @@ const HEIGHT = 1080;
 
 const maxIdleTimer = 90; // seconds
 
+// Internet connectivity tracking
+let isOnline = navigator.onLine;
+let hasInternetIssue = false;
+
 // Frame is common to all templates
 const framePath = "./templates/frame.png";
 let frameImage = new Image();
@@ -350,27 +354,74 @@ function uploadPhoto(photo) {
 					document.getElementById("resultContainer").style.display = "none";
 					hideSpinner();
 					console.error(err);
+					// Mark internet issue when upload fails
+					hasInternetIssue = true;
+					// Clean up result image from DOM if it exists
+					const resultImg = document.getElementById("resultImg");
+					if (resultImg) {
+						document.getElementById("resultContainer").removeChild(resultImg);
+					}
+					// Reset the result image and snapshot state
+					outputImage = null;
+					isSnapshoting = false;
 					// error panel
 					document.getElementById("notificationPanel").style.display = "flex";
 					document.getElementById("notification").innerHTML =
-						"Falha no serviço. <br>Por favor tente<br> novamente em instantes.";
+						"Ah que pena, a intenet falhou para subir a sua foto.<br>Mas continue brincando aqui 😊";
+					// Restore overlays for template switching
+					document.getElementById("overlays").style.display = "flex";
+					document.getElementById("output_canvas").style.display = "block";
 				});
 		} catch (error) {
 			document.getElementById("resultContainer").style.display = "none";
 			hideSpinner();
 			console.error(error);
+			// Mark internet issue when upload fails
+			hasInternetIssue = true;
+			// Clean up result image from DOM if it exists
+			const resultImg = document.getElementById("resultImg");
+			if (resultImg) {
+				document.getElementById("resultContainer").removeChild(resultImg);
+			}
+			// Reset the result image and snapshot state
+			outputImage = null;
+			isSnapshoting = false;
 			// error panel
 			document.getElementById("notificationPanel").style.display = "flex";
 			document.getElementById("notification").innerHTML =
-				"Falha no serviço. <br>Por favor tente<br> novamente em instantes";
+				"Ah que pena, a intenet falhou para subir a sua foto.<br>Mas continue brincando aqui 😊";
+			// Restore overlays for template switching
+			document.getElementById("overlays").style.display = "flex";
+			document.getElementById("output_canvas").style.display = "block";
 		}
 	} else {
+		// Clean up result image from DOM if it exists
+		const resultImg = document.getElementById("resultImg");
+		if (resultImg) {
+			document.getElementById("resultContainer").removeChild(resultImg);
+		}
+		document.getElementById("resultContainer").style.display = "none";
+		// Reset the result image and snapshot state
+		outputImage = null;
+		isSnapshoting = false;
 		// error panel
 		document.getElementById("notificationPanel").style.display = "flex";
 		document.getElementById("notification").innerHTML =
-			"Falha no serviço. <br>Por favor tente<br> novamente em instantes";
+			"Ah que pena, a intenet falhou para subir a sua foto.<br>Mas continue brincando aqui 😊";
+		// Restore overlays for template switching
+		document.getElementById("overlays").style.display = "flex";
+		document.getElementById("output_canvas").style.display = "block";
 		return;
 	}
+}
+
+function dismissNotification() {
+	document.getElementById("notificationPanel").style.display = "none";
+	// Clear internet issue flag when notification is dismissed
+	hasInternetIssue = false;
+	// Restore overlays to allow template switching
+	document.getElementById("overlays").style.display = "flex";
+	document.getElementById("output_canvas").style.display = "block";
 }
 
 function goBackToStart() {
@@ -387,7 +438,17 @@ function startQrTimer() {
 
 	isQrTimerActive = true;
 	qrTimeRemaining = qrTotalTime;
+	addTimeClickCount = 0; // Reset the click counter for new session
 	updateProgressBar();
+
+	// Reset the + tempo button appearance
+	const btn = document.getElementById("addTimeBtn");
+	if (btn) {
+		btn.style.background = "rgba(255, 255, 255, 0.9)";
+		btn.style.color = "#da291c";
+		btn.style.cursor = "pointer";
+		btn.innerHTML = `+ tempo (${maxAddTimeClicks} restantes)`;
+	}
 
 	qrTimer = setInterval(() => {
 		qrTimeRemaining -= 0.1;
@@ -427,6 +488,25 @@ function updateProgressBar() {
 }
 
 function addExtraTime() {
+	// Check if maximum clicks reached
+	if (addTimeClickCount >= maxAddTimeClicks) {
+		// Visual feedback - button is disabled
+		const btn = document.getElementById("addTimeBtn");
+		if (btn) {
+			btn.style.background = "rgba(128, 128, 128, 0.5)";
+			btn.style.color = "#666";
+			btn.style.cursor = "not-allowed";
+			btn.innerHTML = "Limite atingido";
+
+			// Show brief message
+			setTimeout(() => {
+				btn.innerHTML = "+ tempo";
+			}, 2000);
+		}
+		return;
+	}
+
+	addTimeClickCount++; // Increment click counter
 	qrTimeRemaining += 10; // Add 10 seconds
 	qrTotalTime += 10; // Also increase total time for progress calculation
 	updateProgressBar();
@@ -436,9 +516,27 @@ function addExtraTime() {
 	if (btn) {
 		btn.style.background = "#4CAF50";
 		btn.style.color = "white";
+
+		// Update button text to show remaining clicks
+		const remainingClicks = maxAddTimeClicks - addTimeClickCount;
+		if (remainingClicks > 0) {
+			btn.innerHTML = `+ tempo (${remainingClicks} restantes)`;
+		} else {
+			btn.innerHTML = "Último + tempo";
+		}
+
 		setTimeout(() => {
-			btn.style.background = "rgba(255, 255, 255, 0.9)";
-			btn.style.color = "#da291c";
+			if (addTimeClickCount < maxAddTimeClicks) {
+				btn.style.background = "rgba(255, 255, 255, 0.9)";
+				btn.style.color = "#da291c";
+				btn.innerHTML = `+ tempo (${maxAddTimeClicks - addTimeClickCount} restantes)`;
+			} else {
+				// Button reached limit
+				btn.style.background = "rgba(128, 128, 128, 0.5)";
+				btn.style.color = "#666";
+				btn.style.cursor = "not-allowed";
+				btn.innerHTML = "Limite atingido";
+			}
 		}, 300);
 	}
 }
@@ -1209,6 +1307,19 @@ document.addEventListener("DOMContentLoaded", () => {
 	document.addEventListener("keypress", resetTimer);
 	document.addEventListener("touchstart", resetTimer);
 
+	// Listen for internet connectivity changes
+	window.addEventListener("online", () => {
+		isOnline = true;
+		hasInternetIssue = false;
+		console.log("Internet connection restored");
+	});
+
+	window.addEventListener("offline", () => {
+		isOnline = false;
+		hasInternetIssue = true;
+		console.log("Internet connection lost");
+	});
+
 	let idleTime = 0;
 
 	function resetTimer() {
@@ -1220,6 +1331,12 @@ document.addEventListener("DOMContentLoaded", () => {
 		try {
 			const callToActionEl = document.getElementById("callToAction");
 			if (callToActionEl && getComputedStyle(callToActionEl).display !== "none") {
+				idleTime = 0;
+				return;
+			}
+
+			// Don't increment idle timer if there are internet connectivity issues
+			if (!isOnline || hasInternetIssue) {
 				idleTime = 0;
 				return;
 			}
@@ -1291,6 +1408,8 @@ let timeoutInterval = null;
 
 // QR Code Timer variables
 let qrTimer = null;
-let qrTimeRemaining = 24; // seconds
-let qrTotalTime = 24;
+let qrTimeRemaining = 16; // seconds
+let qrTotalTime = 16;
 let isQrTimerActive = false;
+let addTimeClickCount = 0; // Track number of + tempo button clicks
+const maxAddTimeClicks = 5; // Maximum allowed clicks

@@ -44,7 +44,7 @@
 		</button>
 
 		<!-- click txt -->
-		<div class="click-text-container" style="opacity: 0;">
+		<div class="click-text-container" style="">
 			<img src="./imgs/click_text.png">
 		</div>
 
@@ -73,12 +73,11 @@
 		<div class="qr-progress-container">
 			<div id="qrProgressBar" class="qr-progress-bar"></div>
 		</div>
-		<button id="addTimeBtn" class="add-time-btn" onclick="addExtraTime()">+10s</button>
+		<button id="addTimeBtn" class="add-time-btn" onclick="addExtraTime()">+ tempo</button>
 	</div>
 
 	<!-- notification panel -->
-	<div id="notificationPanel" class="notification-panel-container"
-		onclick="document.getElementById('notificationPanel').style.display = 'none'">
+	<div id="notificationPanel" class="notification-panel-container" onclick="dismissNotification()">
 		<div class="notification-container">
 			<p id="notification"></p>
 		</div>
@@ -215,12 +214,23 @@
 
 	.click-text-container {
 		position: fixed;
-		top: 40px;
-		left: 42px;
+		top: 18px;
+		left: 50%;
+		transform: translateX(-50%) scale(0.75);
+
+		background: #000000;
+		border-radius: 0 0 6px 6px;
 
 		justify-content: center;
 		align-items: center;
 
+	}
+
+	.click-text-container img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		transform: scale(0.9);
 	}
 
 	.result-image-container {
@@ -444,7 +454,7 @@
 	.notification-container {
 		position: relative;
 		width: 70%;
-		background: #da291c;
+		background: #000;
 		border-radius: 10px;
 		padding: 20px;
 
