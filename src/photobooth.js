@@ -302,7 +302,7 @@ function uploadPhoto(photo) {
 	let blob = new Blob([ia], {
 		type: "image/jpeg",
 	});
-	let file = new File([blob], `AmstelBBB_${new Date().toDateString()}.jpg`, {
+	let file = new File([blob], `Halloween_Lacta_${new Date().toDateString()}.jpg`, {
 		type: "image/jpeg",
 	});
 
