@@ -302,7 +302,7 @@ function uploadPhoto(photo) {
 	let blob = new Blob([ia], {
 		type: "image/jpeg",
 	});
-	let file = new File([blob], `Halloween_Lacta_${new Date().toDateString()}.jpg`, {
+	let file = new File([blob], `${new Date().toDateString()}.jpg`, {
 		type: "image/jpeg",
 	});
 
@@ -331,7 +331,17 @@ function uploadPhoto(photo) {
 					}
 				)
 				.then((response) => {
-					let qrCodeValue = `https://${"halloween-lacta.blitzar.com.br"}/#/hosted/?material=${response.data.url}`;
+					// Ensure the material URL is percent-encoded when used as a query parameter
+					// Defensive: try to decode first to avoid double-encoding if the server returned an encoded URL
+					let rawMaterial = response.data.url || "";
+					try {
+						rawMaterial = decodeURIComponent(rawMaterial);
+					} catch (e) {
+						// If decode fails, assume it was not encoded and continue
+					}
+					const materialParam = encodeURIComponent(rawMaterial);
+					let qrCodeValue = `https://halloween-lacta.blitzar.com.br/#/hosted/?material=${materialParam}`;
+
 					new QRCode(document.getElementById("qrcode"), {
 						text: qrCodeValue,
 						width: 300,
