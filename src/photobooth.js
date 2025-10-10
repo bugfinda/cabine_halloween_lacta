@@ -1423,3 +1423,50 @@ let qrTotalTime = 16;
 let isQrTimerActive = false;
 let addTimeClickCount = 0; // Track number of + tempo button clicks
 const maxAddTimeClicks = 5; // Maximum allowed clicks
+
+// Version check variables
+let isShowingVersion = false;
+const VERSION_DISPLAY_DURATION = 10000; // 10 seconds to display
+
+// Add keyboard listener for version check
+document.addEventListener("keydown", (event) => {
+	if (event.key === "v" || event.key === "V") {
+		showVersion();
+	}
+});
+
+async function showVersion() {
+	if (isShowingVersion) return;
+	isShowingVersion = true;
+	const container = document.querySelector(".click-text-container");
+	const img = container.querySelector("img");
+
+	if (!img) return;
+
+	// Get version from Tauri
+	let version = "8.0.0"; // Fallback version
+	try {
+		// Try Tauri v2 API
+		if (window.__TAURI__) {
+			const { getVersion } = window.__TAURI__.app;
+			version = await getVersion();
+		}
+	} catch (error) {
+		console.error("Failed to get version:", error);
+		// Use fallback version
+	}
+
+	// Hide image and show version
+	img.style.display = "none";
+	const versionText = document.createElement("div");
+	versionText.className = "version-display";
+	versionText.textContent = `v${version}`;
+	container.appendChild(versionText);
+
+	// Hide version after duration
+	setTimeout(() => {
+		versionText.remove();
+		img.style.display = "block";
+		isShowingVersion = false;
+	}, VERSION_DISPLAY_DURATION);
+}
