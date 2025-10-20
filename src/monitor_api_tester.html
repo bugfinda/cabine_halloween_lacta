@@ -232,13 +232,16 @@
     </section>
 
     <section id="monitorStatus-tab" class="tab-content">
-      <div style="margin-bottom: 15px;">
+      <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
         <label for="monitor-select">Select Monitor: </label>
         <select id="monitor-select" onchange="onMonitorSelect()">
           <option value="">-- Select a monitor --</option>
         </select>
-        <button onclick="refreshMonitorStatus()" style="background-color: #008CBA;">Refresh Status</button>
-        <button id="create-status-btn" onclick="createMonitorStatus()">Create Monitor Status</button>
+        <button onclick="refreshMonitorStatus()" style="background-color: #008CBA; display: none;"
+          id="refresh-status-btn">Refresh Status</button>
+        <button id="create-status-btn" onclick="createMonitorStatus()" style="display: none; margin-left: auto;">Create
+          Monitor
+          Status</button>
       </div>
 
 
@@ -449,10 +452,16 @@
   function onMonitorSelect() {
     const select = document.getElementById('monitor-select');
     selectedMonitorId = select.value;
+    const createBtn = document.getElementById('create-status-btn');
+    const refreshBtn = document.getElementById('refresh-status-btn');
 
     if (selectedMonitorId) {
+      createBtn.style.display = 'inline-block';
+      refreshBtn.style.display = 'inline-block';
       getMonitorStatus();
     } else {
+      createBtn.style.display = 'none';
+      refreshBtn.style.display = 'none';
       const tbody = document.getElementById('monitorStatus-tbody');
       tbody.innerHTML = '<tr><td colspan="5">Select a monitor to view status</td></tr>';
     }
