@@ -10,6 +10,7 @@
 	<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 	<script src="./api.js"></script>
 	<script src="./photobooth.js"></script>
+	<script src="./monitor_status_api.js"></script>
 	<script src="./spinner.js"></script>
 	<script src="./lib/qrcode.min.js"></script>
 
@@ -87,6 +88,12 @@
 	<input id="videoXOffset" type="range" min="0" max="1000" value="0" class="slider"
 		style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 100; display: none;">
 </body>
+
+<script>
+	// PING
+	pingMonitorStatus();
+	setInterval(pingMonitorStatus, 5 * 60 * 1000);
+</script>
 
 <style>
 	@font-face {

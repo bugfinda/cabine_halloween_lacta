@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitor API Tester</title>
+  <link rel="icon" type="image/x-icon" href="static/favicon.ico">
+  <link rel="stylesheet" href="static/styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+
+    header {
+      background-color: #333;
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    section {
+      background-color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    #refresh-btn {
+      background-color: #008CBA;
+    }
+
+    #refresh-btn:hover {
+      background-color: #007399;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-wrap: break-word;
+    }
+
+    th {
+      background-color: #4CAF50;
+      color: white;
+      font-weight: bold;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    tr:hover {
+      background-color: #e8e8e8;
+    }
+
+    #results-output {
+      background-color: #f4f4f4;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    #create-result {
+      margin-top: 15px;
+    }
+
+    #create-result pre {
+      background-color: #f4f4f4;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+
+    footer {
+      text-align: center;
+      color: #666;
+      margin-top: 20px;
+    }
+
+    .tab-buttons {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+    }
+
+    .tab-btn {
+      background-color: #ddd;
+      color: #333;
+      padding: 12px 24px;
+      border: 1px solid #ccc;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-size: 16px;
+      margin-right: 0;
+    }
+
+    .tab-btn:hover {
+      background-color: #ccc;
+    }
+
+    .tab-btn.active {
+      background-color: white;
+      color: #333;
+      border-bottom: 2px solid white;
+      font-weight: bold;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    #tabs {
+      padding: 0;
+      background-color: transparent;
+      box-shadow: none;
+      margin-bottom: 0;
+    }
+
+    select {
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-right: 10px;
+      min-width: 200px;
+    }
+
+    label {
+      font-weight: bold;
+      margin-right: 8px;
+    }
+
+    #create-status-result {
+      margin-top: 10px;
+    }
+
+    #create-status-result pre {
+      background-color: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      border: 1px solid #ddd;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Monitor API Tester</h1>
+  </header>
+  <main>
+    <section id="create-monitor">
+      <h2>Create Monitor</h2>
+      <button id="create-btn" onclick="createMonitor()">Create Monitor</button>
+      <div id="create-result"></div>
+    </section>
+
+    <section id="tabs">
+      <div class="tab-buttons">
+        <button class="tab-btn active" onclick="switchTab('monitors')">Monitors</button>
+        <button class="tab-btn" onclick="switchTab('monitorStatus')">Monitor Status</button>
+      </div>
+    </section>
+
+    <section id="monitors-tab" class="tab-content active">
+      <h2>Monitors</h2>
+      <button id="refresh-btn" onclick="getMonitors()">Refresh Monitors</button>
+      <table id="monitors-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Monitor</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Lat</th>
+            <th>Lon</th>
+            <th>Order</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="monitors-tbody">
+        </tbody>
+      </table>
+    </section>
+
+    <section id="monitorStatus-tab" class="tab-content">
+      <h2>Monitor Status</h2>
+      <div style="margin-bottom: 15px;">
+        <label for="monitor-select">Select Monitor: </label>
+        <select id="monitor-select" onchange="onMonitorSelect()">
+          <option value="">-- Select a monitor --</option>
+        </select>
+        <button onclick="refreshMonitorStatus()" style="background-color: #008CBA;">Refresh Status</button>
+      </div>
+
+      <div id="create-status-section"
+        style="display: none; margin-bottom: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 4px;">
+        <h3>Create Monitor Status</h3>
+        <button id="create-status-btn" onclick="createMonitorStatus()">Create Monitor Status</button>
+        <div id="create-status-result"></div>
+      </div>
+
+      <table id="monitorStatus-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Monitor ID</th>
+            <th>Properties</th>
+            <th>Created At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="monitorStatus-tbody">
+          <tr>
+            <td colspan="5">Select a monitor to view status</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="test-results">
+      <h2>Test Results</h2>
+      <pre id="results-output"></pre>
+    </section>
+  </main>
+  <footer>
+    <p>&copy; 2023 Monitor API Tester</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="api.js"></script>
+</body>
+
+<script>
+  const EVENT_ID = 'd549ce10-9d4a-11f0-91ce-c982733c9978';
+  const AUTH_TOKEN = '76ce6400-8de8-11ed-916c-c7a5caa67b1a';
+
+  const monitorPayload = {
+    "monitor": "Cabine Halloween Lacta",
+    "description": "Av. Major Sylvio de Magalhães Padilha, 16741 - Jardim Fonte do Morumbi, São Paulo - SP, 05693-000",
+    "lat": "-23.627245",
+    "lon": "-46.7194049",
+    "category": "Cabine de Fotos",
+    "image": null,
+    "link": null,
+    "properties": "{}",
+    "config": "{}",
+    "order": 1
+  };
+
+  function log(message, data = null) {
+    const output = document.getElementById('results-output');
+    const timestamp = new Date().toLocaleTimeString();
+    output.textContent += `[${timestamp}] ${message}\n`;
+    if (data) {
+      output.textContent += JSON.stringify(data, null, 2) + '\n';
+    }
+    output.textContent += '\n';
+  }
+
+  async function createMonitor() {
+    const btn = document.getElementById('create-btn');
+    const resultDiv = document.getElementById('create-result');
+
+    btn.disabled = true;
+    resultDiv.innerHTML = '<p>Creating monitor...</p>';
+    log('Creating monitor...', monitorPayload);
+
+    try {
+      const response = await api.post(`/event/${EVENT_ID}/monitor`, monitorPayload, {
+        headers: {
+          'Authorization': AUTH_TOKEN
+        }
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        resultDiv.innerHTML = `<p style="color: green;">✓ Monitor created successfully!</p><pre>${JSON.stringify(response.data, null, 2)}</pre>`;
+        log('Monitor created successfully!', response.data);
+        // Refresh the monitors list
+        getMonitors();
+      } else {
+        resultDiv.innerHTML = `<p style="color: red;">✗ Error: ${response.status}</p><pre>${JSON.stringify(response.data, null, 2)}</pre>`;
+        log('Error creating monitor', { status: response.status, data: response.data });
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || error.message;
+      resultDiv.innerHTML = `<p style="color: red;">✗ Error: ${message}</p>`;
+      log('Error creating monitor', error.response?.data || error.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function getMonitors() {
+    const tbody = document.getElementById('monitors-tbody');
+    tbody.innerHTML = '<tr><td colspan="8">Loading...</td></tr>';
+    log('Fetching monitors list...');
+
+    try {
+      const response = await api.get(`/event/${EVENT_ID}/monitor`, {
+        headers: {
+          'Authorization': AUTH_TOKEN
+        }
+      });
+
+      if (response.status === 200) {
+        log('Monitors fetched successfully!', response.data);
+        monitorsList = response.data; // Store for monitor select dropdown
+        displayMonitors(response.data);
+      } else {
+        tbody.innerHTML = `<tr><td colspan="8" style="color: red;">Error: ${response.status}</td></tr>`;
+        log('Error fetching monitors', { status: response.status, data: response.data });
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || error.message;
+      tbody.innerHTML = `<tr><td colspan="8" style="color: red;">Error: ${message}</td></tr>`;
+      log('Error fetching monitors', error.response?.data || error.message);
+    }
+  }
+
+  function displayMonitors(monitors) {
+    const tbody = document.getElementById('monitors-tbody');
+
+    if (!monitors || monitors.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8">No monitors found</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = monitors.map(monitor => `
+      <tr>
+        <td>${monitor.monitor_id || '-'}</td>
+        <td>${monitor.monitor || '-'}</td>
+        <td>${monitor.description || '-'}</td>
+        <td>${monitor.category || '-'}</td>
+        <td>${monitor.lat || '-'}</td>
+        <td>${monitor.lon || '-'}</td>
+        <td>${monitor.order || '-'}</td>
+        <td><button onclick="getMonitorById('${monitor.monitor_id}')">View Details</button></td>
+      </tr>
+    `).join('');
+  }
+
+  async function getMonitorById(monitorId) {
+    log(`Fetching monitor details for ID: ${monitorId}`);
+
+    try {
+      const response = await api.get(`/event/${EVENT_ID}/monitor/${monitorId}`, {
+        headers: {
+          'Authorization': AUTH_TOKEN
+        }
+      });
+
+      if (response.status === 200) {
+        log(`Monitor ${monitorId} details:`, response.data);
+      } else {
+        log('Error fetching monitor details', { status: response.status, data: response.data });
+      }
+    } catch (error) {
+      log('Error fetching monitor details', error.response?.data || error.message);
+    }
+  }
+
+  // Monitor Status functionality
+  let selectedMonitorId = null;
+  let monitorsList = [];
+
+  function switchTab(tabName) {
+    // Update tab buttons
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+
+    // Update tab content
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => content.classList.remove('active'));
+
+    if (tabName === 'monitors') {
+      document.getElementById('monitors-tab').classList.add('active');
+    } else if (tabName === 'monitorStatus') {
+      document.getElementById('monitorStatus-tab').classList.add('active');
+      populateMonitorSelect();
+    }
+  }
+
+  function populateMonitorSelect() {
+    const select = document.getElementById('monitor-select');
+    select.innerHTML = '<option value="">-- Select a monitor --</option>';
+
+    monitorsList.forEach(monitor => {
+      const option = document.createElement('option');
+      option.value = monitor.monitor_id;
+      option.textContent = `${monitor.monitor} (${monitor.monitor_id})`;
+      select.appendChild(option);
+    });
+  }
+
+  function onMonitorSelect() {
+    const select = document.getElementById('monitor-select');
+    selectedMonitorId = select.value;
+
+    const createSection = document.getElementById('create-status-section');
+    if (selectedMonitorId) {
+      createSection.style.display = 'block';
+      getMonitorStatus();
+    } else {
+      createSection.style.display = 'none';
+      const tbody = document.getElementById('monitorStatus-tbody');
+      tbody.innerHTML = '<tr><td colspan="5">Select a monitor to view status</td></tr>';
+    }
+  }
+
+  function refreshMonitorStatus() {
+    if (selectedMonitorId) {
+      getMonitorStatus();
+    }
+  }
+
+  async function getMonitorStatus() {
+    if (!selectedMonitorId) return;
+
+    const tbody = document.getElementById('monitorStatus-tbody');
+    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+    log(`Fetching monitor status for monitor: ${selectedMonitorId}`);
+
+    try {
+      const response = await api.get(`/event/${EVENT_ID}/monitor/${selectedMonitorId}/monitorStatus`, {
+        headers: {
+          'Authorization': AUTH_TOKEN
+        }
+      });
+
+      if (response.status === 200) {
+        log('Monitor status fetched successfully!', response.data);
+        displayMonitorStatus(response.data);
+      } else {
+        tbody.innerHTML = `<tr><td colspan="5" style="color: red;">Error: ${response.status}</td></tr>`;
+        log('Error fetching monitor status', { status: response.status, data: response.data });
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || error.message;
+      tbody.innerHTML = `<tr><td colspan="5" style="color: red;">Error: ${message}</td></tr>`;
+      log('Error fetching monitor status', error.response?.data || error.message);
+    }
+  }
+
+  function displayMonitorStatus(statusList) {
+    const tbody = document.getElementById('monitorStatus-tbody');
+
+    if (!statusList || statusList.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5">No monitor status found</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = statusList.map(status => `
+      <tr>
+        <td>${status.monitor_status_id || status.id || '-'}</td>
+        <td>${status.monitor_id || selectedMonitorId || '-'}</td>
+        <td><pre style="margin: 0; font-size: 12px; max-width: 300px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;">${status.properties || '{}'}</pre></td>
+        <td>${status.created_at || status.createdAt || '-'}</td>
+        <td>
+          <button onclick="getMonitorStatusById('${status.monitor_status_id || status.id}')" style="font-size: 12px; padding: 6px 12px;">View</button>
+          <button onclick="updateMonitorStatus('${status.monitor_status_id || status.id}')" style="font-size: 12px; padding: 6px 12px; background-color: #ff9800;">Update</button>
+          <button onclick="deleteMonitorStatus('${status.monitor_status_id || status.id}')" style="font-size: 12px; padding: 6px 12px; background-color: #f44336;">Delete</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  async function createMonitorStatus() {
+    if (!selectedMonitorId) return;
+
+    const btn = document.getElementById('create-status-btn');
+    const resultDiv = document.getElementById('create-status-result');
+
+    btn.disabled = true;
+    resultDiv.innerHTML = '<p>Getting location...</p>';
+
+    // Get current geolocation
+    let lat = "-23.627245"; // default
+    let lon = "-46.7194049"; // default
+
+    try {
+      const position = await new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error('Geolocation is not supported by this browser.'));
+        } else {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        }
+      });
+
+      lat = position.coords.latitude.toString();
+      lon = position.coords.longitude.toString();
+      log('Location obtained:', { lat, lon });
+    } catch (error) {
+      log('Could not get location, using default:', error.message);
+    }
+
+    resultDiv.innerHTML = '<p>Creating monitor status...</p>';
+
+    const payload = {
+      "properties": JSON.stringify({
+        "monitor_status": "Ping Cabine Halloween Lacta",
+        "description": "new ping status",
+        "lat": lat,
+        "lon": lon,
+        "timestamp": new Date().toISOString()
+      })
+    };
+    log('Creating monitor status...', payload);
+
+    try {
+      const response = await api.post(`/event/${EVENT_ID}/monitor/${selectedMonitorId}/monitorStatus`, payload, {
+        headers: {
+          'Authorization': AUTH_TOKEN
+        }
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        resultDiv.innerHTML = `<p style="color: green;">✓ Monitor status created successfully!</p><pre>${JSON.stringify(response.data, null, 2)}</pre>`;
+        log('Monitor status created successfully!', response.data);
+        // Refresh the status list
+        getMonitorStatus();
+      } else {
+        resultDiv.innerHTML = `<p style="color: red;">✗ Error: ${response.status}</p><pre>${JSON.stringify(response.data, null, 2)}</pre>`;
+        log('Error creating monitor status', { status: response.status, data: response.data });
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || error.message;
+      resultDiv.innerHTML = `<p style="color: red;">✗ Error: ${message}</p>`;
+      log('Error creating monitor status', error.response?.data || error.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function getMonitorStatusById(statusId) {
+    if (!selectedMonitorId) return;
+
+    log(`Fetching monitor status details for ID: ${statusId}`);
+
+    try {
+      const response = await api.get(`/event/${EVENT_ID}/monitor/${selectedMonitorId}/monitorStatus/${statusId}`, {
+        headers: {
+          'Authorization': AUTH_TOKEN
+        }
+      });
+
+      if (response.status === 200) {
+        log(`Monitor status ${statusId} details:`, response.data);
+      } else {
+        log('Error fetching monitor status details', { status: response.status, data: response.data });
+      }
+    } catch (error) {
+      log('Error fetching monitor status details', error.response?.data || error.message);
+    }
+  }
+
+  async function updateMonitorStatus(statusId) {
+    if (!selectedMonitorId) return;
+
+    const newProperties = prompt('Enter new properties (JSON format):', '{}');
+    if (newProperties === null) return;
+
+    try {
+      const payload = { properties: newProperties };
+      log(`Updating monitor status ${statusId}...`, payload);
+
+      const response = await api.put(`/event/${EVENT_ID}/monitor/${selectedMonitorId}/monitorStatus/${statusId}`, payload, {
+        headers: {
+          'Authorization': AUTH_TOKEN
+        }
+      });
+
+      if (response.status === 200) {
+        log(`Monitor status ${statusId} updated successfully!`, response.data);
+        getMonitorStatus();
+      } else {
+        log('Error updating monitor status', { status: response.status, data: response.data });
+      }
+    } catch (error) {
+      log('Error updating monitor status', error.response?.data || error.message);
+    }
+  }
+
+  async function deleteMonitorStatus(statusId) {
+    if (!selectedMonitorId) return;
+
+    if (!confirm(`Are you sure you want to delete monitor status ${statusId}?`)) return;
+
+    log(`Deleting monitor status ${statusId}...`);
+
+    try {
+      const response = await api.delete(`/event/${EVENT_ID}/monitor/${selectedMonitorId}/monitorStatus/${statusId}`, {
+        headers: {
+          'Authorization': AUTH_TOKEN
+        }
+      });
+
+      if (response.status === 200 || response.status === 204) {
+        log(`Monitor status ${statusId} deleted successfully!`, response.data);
+        getMonitorStatus();
+      } else {
+        log('Error deleting monitor status', { status: response.status, data: response.data });
+      }
+    } catch (error) {
+      log('Error deleting monitor status', error.response?.data || error.message);
+    }
+  }
+
+  // Load monitors on page load
+  window.addEventListener('DOMContentLoaded', () => {
+    getMonitors();
+  });
+</script>
+
+</html>
