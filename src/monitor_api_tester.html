@@ -64,17 +64,34 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 15px;
+      display: block;
+      max-height: 40dvh;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    thead {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    tbody {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
     }
 
     th,
     td {
       border: 1px solid #ddd;
-      padding: 12px;
+      padding: 8px;
       text-align: left;
       max-width: 300px;
       overflow: hidden;
       text-overflow: ellipsis;
       word-wrap: break-word;
+      font-size: 12px;
     }
 
     th {
@@ -95,9 +112,10 @@
       background-color: #f4f4f4;
       padding: 15px;
       border-radius: 4px;
-      overflow-x: auto;
       max-height: 400px;
       overflow-y: auto;
+      overflow-x: hidden;
+      word-wrap: break-word;
     }
 
     #create-result {
@@ -108,7 +126,10 @@
       background-color: #f4f4f4;
       padding: 10px;
       border-radius: 4px;
-      overflow-x: auto;
+      overflow-x: hidden;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      font-size: 12px;
     }
 
     footer {
@@ -183,8 +204,11 @@
       background-color: #fff;
       padding: 10px;
       border-radius: 4px;
-      overflow-x: auto;
+      overflow-x: hidden;
       border: 1px solid #ddd;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      font-size: 12px;
     }
   </style>
 </head>
