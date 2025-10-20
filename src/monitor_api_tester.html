@@ -194,11 +194,11 @@
     <h1>Monitor API Tester</h1>
   </header>
   <main>
-    <section id="create-monitor">
+    <!-- <section id="create-monitor">
       <h2>Create Monitor</h2>
       <button id="create-btn" onclick="createMonitor()">Create Monitor</button>
       <div id="create-result"></div>
-    </section>
+    </section> -->
 
     <section id="tabs">
       <div class="tab-buttons">
@@ -264,7 +264,11 @@
     </section>
 
     <section id="test-results">
-      <h2>Test Results</h2>
+      <div style="display: flex; gap: 10px;">
+        <h2>Test Results</h2>
+        <button onclick="clearTestResults()" style="background-color: #f44336; margin:0 0 15px auto;">Clear
+        </button>
+      </div>
       <pre id="results-output"></pre>
     </section>
   </main>
@@ -301,6 +305,11 @@
       output.textContent += JSON.stringify(data, null, 2) + '\n';
     }
     output.textContent += '\n';
+  }
+
+  function clearTestResults() {
+    const output = document.getElementById('results-output');
+    output.textContent = '';
   }
 
   async function createMonitor() {
