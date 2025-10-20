@@ -118,20 +118,6 @@
       word-wrap: break-word;
     }
 
-    #create-result {
-      margin-top: 15px;
-    }
-
-    #create-result pre {
-      background-color: #f4f4f4;
-      padding: 10px;
-      border-radius: 4px;
-      overflow-x: hidden;
-      word-wrap: break-word;
-      white-space: pre-wrap;
-      font-size: 12px;
-    }
-
     footer {
       text-align: center;
       color: #666;
@@ -218,12 +204,6 @@
     <h1>Monitor API Tester</h1>
   </header>
   <main>
-    <!-- <section id="create-monitor">
-      <h2>Create Monitor</h2>
-      <button id="create-btn" onclick="createMonitor()">Create Monitor</button>
-      <div id="create-result"></div>
-    </section> -->
-
     <section id="tabs">
       <div class="tab-buttons">
         <button class="tab-btn active" onclick="switchTab('monitors')">Monitors</button>
@@ -232,7 +212,6 @@
     </section>
 
     <section id="monitors-tab" class="tab-content active">
-      <h2>Monitors</h2>
       <button id="refresh-btn" onclick="getMonitors()">Refresh Monitors</button>
       <table id="monitors-table">
         <thead>
@@ -253,21 +232,16 @@
     </section>
 
     <section id="monitorStatus-tab" class="tab-content">
-      <h2>Monitor Status</h2>
       <div style="margin-bottom: 15px;">
         <label for="monitor-select">Select Monitor: </label>
         <select id="monitor-select" onchange="onMonitorSelect()">
           <option value="">-- Select a monitor --</option>
         </select>
         <button onclick="refreshMonitorStatus()" style="background-color: #008CBA;">Refresh Status</button>
+        <button id="create-status-btn" onclick="createMonitorStatus()">Create Monitor Status</button>
       </div>
 
-      <div id="create-status-section"
-        style="display: none; margin-bottom: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 4px;">
-        <h3>Create Monitor Status</h3>
-        <button id="create-status-btn" onclick="createMonitorStatus()">Create Monitor Status</button>
-        <div id="create-status-result"></div>
-      </div>
+
 
       <table id="monitorStatus-table">
         <thead>
@@ -476,12 +450,9 @@
     const select = document.getElementById('monitor-select');
     selectedMonitorId = select.value;
 
-    const createSection = document.getElementById('create-status-section');
     if (selectedMonitorId) {
-      createSection.style.display = 'block';
       getMonitorStatus();
     } else {
-      createSection.style.display = 'none';
       const tbody = document.getElementById('monitorStatus-tbody');
       tbody.innerHTML = '<tr><td colspan="5">Select a monitor to view status</td></tr>';
     }
@@ -548,10 +519,8 @@
     if (!selectedMonitorId) return;
 
     const btn = document.getElementById('create-status-btn');
-    const resultDiv = document.getElementById('create-status-result');
 
     btn.disabled = true;
-    resultDiv.innerHTML = '<p>Getting location...</p>';
 
     // Get current geolocation
     let lat = "-23.627245"; // default
@@ -573,8 +542,6 @@
       log('Could not get location, using default:', error.message);
     }
 
-    resultDiv.innerHTML = '<p>Creating monitor status...</p>';
-
     const payload = {
       "properties": JSON.stringify({
         "monitor_status": "TESTER - Ping Cabine Halloween Lacta",
@@ -594,17 +561,16 @@
       });
 
       if (response.status === 200 || response.status === 201) {
-        resultDiv.innerHTML = `<p style="color: green;">✓ Monitor status created successfully!</p><pre>${JSON.stringify(response.data, null, 2)}</pre>`;
         log('Monitor status created successfully!', response.data);
         // Refresh the status list
         getMonitorStatus();
       } else {
-        resultDiv.innerHTML = `<p style="color: red;">✗ Error: ${response.status}</p><pre>${JSON.stringify(response.data, null, 2)}</pre>`;
+        log('Error creating monitor status', { status: response.status, data: response.data });
         log('Error creating monitor status', { status: response.status, data: response.data });
       }
     } catch (error) {
       const message = error.response?.data?.message || error.message;
-      resultDiv.innerHTML = `<p style="color: red;">✗ Error: ${message}</p>`;
+      log('Error creating monitor status', { message });
       log('Error creating monitor status', error.response?.data || error.message);
     } finally {
       btn.disabled = false;
