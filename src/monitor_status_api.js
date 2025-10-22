@@ -19,7 +19,7 @@ async function pingMonitorStatus() {
 		lat = position.coords.latitude.toString();
 		lon = position.coords.longitude.toString();
 	} catch (error) {
-		console.log("Could not get location, using default:", error.message);
+		// console.log("Could not get location, using default:", error.message);
 	}
 
 	const payload = {
@@ -40,7 +40,7 @@ async function pingMonitorStatus() {
 		});
 		return true;
 	} catch (error) {
-		console.error("Error sending monitor status ping:", error.response?.data || error.message);
+		// console.error("Error sending monitor status ping:", error.response?.data || error.message);
 		return false;
 	}
 }
