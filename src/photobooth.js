@@ -1176,6 +1176,12 @@ let videoXOffset = 440;
 
 let machine = "";
 document.addEventListener("DOMContentLoaded", () => {
+	// Store application start time in localStorage
+	// This helps track if the application crashed and restarted
+	const appStartTime = new Date().toISOString();
+	localStorage.setItem("appStartTime", appStartTime);
+	console.log("Application started at:", appStartTime);
+
 	// Get machine id from URL
 	const urlParams = new URLSearchParams(window.location.search);
 	machine = urlParams.get("machineId") || localStorage.getItem("machineId");

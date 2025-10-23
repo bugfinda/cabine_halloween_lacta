@@ -80,6 +80,40 @@ async function pingMonitorStatus() {
 	}
 	hardware.id = hardwareId;
 
+	// Get tracking timestamps and IDs from localStorage
+	const appStartTime = localStorage.getItem("appStartTime") || null;
+	const lastSuccessfulMonitorPing = localStorage.getItem("lastSuccessfulMonitorPing") || null;
+	const lastSuccessfulMonitorStatusId = localStorage.getItem("lastSuccessfulMonitorStatusId") || null;
+
+	// Calculate uptime metrics
+	const now = Date.now();
+	let appUptimeHrs = null;
+	let netUptimeHrs = null;
+
+	// Calculate app uptime: hours since application started
+	if (appStartTime) {
+		try {
+			const startTime = new Date(appStartTime).getTime();
+			if (!isNaN(startTime) && startTime <= now) {
+				appUptimeHrs = ((now - startTime) / (1000 * 60 * 60)).toFixed(2);
+			}
+		} catch (error) {
+			// Invalid timestamp, leave as null
+		}
+	}
+
+	// Calculate network uptime: hours since last successful communication
+	if (lastSuccessfulMonitorPing) {
+		try {
+			const lastPingTime = new Date(lastSuccessfulMonitorPing).getTime();
+			if (!isNaN(lastPingTime) && lastPingTime <= now) {
+				netUptimeHrs = ((now - lastPingTime) / (1000 * 60 * 60)).toFixed(2);
+			}
+		} catch (error) {
+			// Invalid timestamp, leave as null
+		}
+	}
+
 	const payload = {
 		properties: JSON.stringify({
 			monitor_status: "Ping Cabine Halloween Lacta",
@@ -89,15 +123,34 @@ async function pingMonitorStatus() {
 			app_version: appVersion,
 			hardware: hardware,
 			timestamp: new Date().toISOString(),
+			app_start_time: appStartTime,
+			last_successful_monitor_ping: lastSuccessfulMonitorPing,
+			last_successful_monitor_status_id: lastSuccessfulMonitorStatusId,
+			app_uptime_hrs: appUptimeHrs,
+			net_uptime_hrs: netUptimeHrs,
 		}),
 	};
 
 	try {
-		await api.post(`/event/${EVENT_ID}/monitor/${MONITOR_ID}/monitorStatus`, payload, {
+		const response = await api.post(`/event/${EVENT_ID}/monitor/${MONITOR_ID}/monitorStatus`, payload, {
 			headers: {
 				Authorization: AUTH_TOKEN,
 			},
 		});
+
+		// Store timestamp and monitor_status_id from successful response
+		// This creates an audit trail of successful communications
+		const successfulPingTime = new Date().toISOString();
+		localStorage.setItem("lastSuccessfulMonitorPing", successfulPingTime);
+
+		// Extract and store the monitor_status_id from the API response
+		if (response.data && response.data.monitor_status_id) {
+			localStorage.setItem("lastSuccessfulMonitorStatusId", response.data.monitor_status_id);
+			console.log("Monitor ping successful at:", successfulPingTime, "| ID:", response.data.monitor_status_id);
+		} else {
+			console.log("Monitor ping successful at:", successfulPingTime, "| No ID in response");
+		}
+
 		return true;
 	} catch (error) {
 		// console.error("Error sending monitor status ping:", error.response?.data || error.message);
