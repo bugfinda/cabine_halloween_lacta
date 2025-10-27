@@ -1,7 +1,3 @@
-const EVENT_ID = "d549ce10-9d4a-11f0-91ce-c982733c9978";
-const AUTH_TOKEN = "76ce6400-8de8-11ed-916c-c7a5caa67b1a";
-const MONITOR_ID = "3f23b210-adc2-11f0-871b-d3fee972e84b";
-
 async function pingMonitorStatus() {
 	// Get current geolocation
 	let lat = "-23.627245"; // default

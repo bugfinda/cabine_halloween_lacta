@@ -320,16 +320,12 @@ function uploadPhoto(photo) {
 		try {
 			showSpinner();
 			api
-				.post(
-					`event/d549ce10-9d4a-11f0-91ce-c982733c9978/activity/e8777910-9d4a-11f0-91ce-c982733c9978/materialUpload`,
-					formData,
-					{
-						headers: {
-							"Content-Type": "multipart/form-data",
-							Authorization: token,
-						},
-					}
-				)
+				.post(`event/${EVENT_ID}/activity/${ACTIVITY_ID}/materialUpload`, formData, {
+					headers: {
+						"Content-Type": "multipart/form-data",
+						Authorization: token,
+					},
+				})
 				.then((response) => {
 					// Ensure the material URL is percent-encoded when used as a query parameter
 					// Defensive: try to decode first to avoid double-encoding if the server returned an encoded URL
