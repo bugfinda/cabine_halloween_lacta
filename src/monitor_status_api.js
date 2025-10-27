@@ -1,7 +1,7 @@
 async function pingMonitorStatus() {
 	// Get current geolocation
-	let lat = "-23.627245"; // default
-	let lon = "-46.7194049"; // default
+	let lat = DEFAULT_LAT; // default
+	let lon = DEFAULT_LON; // default
 
 	try {
 		const position = await new Promise((resolve, reject) => {
@@ -128,8 +128,8 @@ async function pingMonitorStatus() {
 
 	const payload = {
 		properties: JSON.stringify({
-			monitor_status: "Ping Cabine Halloween Lacta",
-			description: "ping status",
+			monitor_status: MONITOR_STATUS,
+			description: MONITOR_DESCRIPTION,
 			lat: lat,
 			lon: lon,
 			app_version: appVersion,
