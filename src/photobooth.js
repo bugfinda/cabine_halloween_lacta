@@ -1175,12 +1175,29 @@ function drawTemplateElements(ctx) {
 let videoXOffset = 440;
 
 let machine = "";
-document.addEventListener("DOMContentLoaded", () => {
-	// Store application start time in localStorage
+document.addEventListener("DOMContentLoaded", async () => {
+	// Get true application start time from Tauri
 	// This helps track if the application crashed and restarted
-	const appStartTime = new Date().toISOString();
-	localStorage.setItem("appStartTime", appStartTime);
-	console.log("Application started at:", appStartTime);
+	try {
+		if (window.__TAURI__) {
+			const { invoke } = window.__TAURI__.core;
+			const appStartTimeMs = await invoke("get_app_start_time");
+			// Convert milliseconds to ISO string
+			const lastCycleStart = new Date(parseInt(appStartTimeMs)).toISOString();
+			localStorage.setItem("lastCycleStart", lastCycleStart);
+			console.log("Application started at:", lastCycleStart);
+		} else {
+			// Fallback for non-Tauri environments (development)
+			const lastCycleStart = new Date().toISOString();
+			localStorage.setItem("lastCycleStart", lastCycleStart);
+			console.log("Application started at (fallback):", lastCycleStart);
+		}
+	} catch (error) {
+		console.error("Failed to get app start time from Tauri:", error);
+		// Fallback to current time
+		const lastCycleStart = new Date().toISOString();
+		localStorage.setItem("lastCycleStart", lastCycleStart);
+	}
 
 	// Get machine id from URL
 	const urlParams = new URLSearchParams(window.location.search);

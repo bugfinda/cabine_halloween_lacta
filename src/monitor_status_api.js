@@ -81,24 +81,40 @@ async function pingMonitorStatus() {
 	hardware.id = hardwareId;
 
 	// Get tracking timestamps and IDs from localStorage
-	const appStartTime = localStorage.getItem("appStartTime") || null;
+	const lastCycleStart = localStorage.getItem("lastCycleStart") || null;
 	const lastSuccessfulMonitorPing = localStorage.getItem("lastSuccessfulMonitorPing") || null;
 	const lastSuccessfulMonitorStatusId = localStorage.getItem("lastSuccessfulMonitorStatusId") || null;
 
 	// Calculate uptime metrics
 	const now = Date.now();
-	let appUptimeHrs = null;
+	let lastCycleUptimeHrs = null;
 	let netUptimeHrs = null;
 
-	// Calculate app uptime: hours since application started
-	if (appStartTime) {
-		try {
-			const startTime = new Date(appStartTime).getTime();
+	// Calculate app uptime: get accurate uptime from Tauri
+	try {
+		if (window.__TAURI__) {
+			const { invoke } = window.__TAURI__.core;
+			const uptimeSeconds = await invoke("get_app_uptime_seconds");
+			lastCycleUptimeHrs = (uptimeSeconds / 3600).toFixed(2);
+		} else if (lastCycleStart) {
+			// Fallback to localStorage calculation for non-Tauri environments
+			const startTime = new Date(lastCycleStart).getTime();
 			if (!isNaN(startTime) && startTime <= now) {
-				appUptimeHrs = ((now - startTime) / (1000 * 60 * 60)).toFixed(2);
+				lastCycleUptimeHrs = ((now - startTime) / (1000 * 60 * 60)).toFixed(2);
 			}
-		} catch (error) {
-			// Invalid timestamp, leave as null
+		}
+	} catch (error) {
+		// console.log("Could not get app uptime:", error.message);
+		// Fallback to localStorage calculation
+		if (lastCycleStart) {
+			try {
+				const startTime = new Date(lastCycleStart).getTime();
+				if (!isNaN(startTime) && startTime <= now) {
+					lastCycleUptimeHrs = ((now - startTime) / (1000 * 60 * 60)).toFixed(2);
+				}
+			} catch (error) {
+				// Invalid timestamp, leave as null
+			}
 		}
 	}
 
@@ -123,10 +139,10 @@ async function pingMonitorStatus() {
 			app_version: appVersion,
 			hardware: hardware,
 			timestamp: new Date().toISOString(),
-			app_start_time: appStartTime,
+			app_start_time: lastCycleStart,
 			last_successful_monitor_ping: lastSuccessfulMonitorPing,
 			last_successful_monitor_status_id: lastSuccessfulMonitorStatusId,
-			app_uptime_hrs: appUptimeHrs,
+			app_uptime_hrs: lastCycleUptimeHrs,
 			net_uptime_hrs: netUptimeHrs,
 		}),
 	};
